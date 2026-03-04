@@ -1,0 +1,8 @@
+{
+  "name": "happynachbar-mobile",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:mobile": "npm -w apps/mobile run start"
+  }
+}

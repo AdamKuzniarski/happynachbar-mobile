@@ -1,0 +1,10 @@
+node_modules
+.idea
+*.iml
+**/node_modules
+.env
+.DS_Store
+.expo
+.expo-shared
+dist
+build
