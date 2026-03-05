@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  email                                          String             @unique
+  createdAt                                      DateTime           @default(now())
+  updatedAt                                      DateTime           @updatedAt
+  passwordHash                                   String
+  id                                             String             @id @default(uuid()) @db.Uuid
+  lastActiveAt                                   DateTime?
+  emailVerifiedAt                                DateTime?
+  role                                           UserRole           @default(USER)
+  banReason                                      String?
+  bannedAt                                       DateTime?
+  isBanned                                       Boolean            @default(false)
+  createdActivities                              Activity[]
+  activityParticipants                           ActivityParticipant[]
+  auditLogs                                      AuditLog[]         @relation("AuditLogsByActor")
+  Conversation_Conversation_participantAIdToUser Conversation[]     @relation("Conversation_participantAIdToUser")
+  Conversation_Conversation_participantBIdToUser Conversation[]     @relation("Conversation_participantBIdToUser")
+  ConversationRead                               ConversationRead[]
+  Message                                        Message[]
+  profile                                        UserProfile?
+  warningsCreated                                UserWarning[]      @relation("WarningsCreatedBy")
+  warningsReceived                               UserWarning[]      @relation("WarningsReceived")
+
+  conversationParticipants                       ConversationParticipant[]
+
+  passwordResetTokenHash                         String?            @unique
+  passwordResetExpiresAt                         DateTime? 
+
+}
+
+model UserProfile {
+  userId      String   @id @db.Uuid
+  plz         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  avatarUrl   String?
+  displayName String   @default("Neighbor")
+  bio         String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([plz])
+}
+
+model Activity {
+  id           String           @id @default(uuid()) @db.Uuid
+  title        String
+  description  String?
+  status       ActivityStatus   @default(ACTIVE)
+  plz          String           @db.VarChar(5)
+  createdById  String           @db.Uuid
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  category     ActivityCategory
+  scheduledAt  DateTime?
+  createdBy    User             @relation(fields: [createdById], references: [id])
+  images       ActivityImage[]
+  participants ActivityParticipant[]
+  Conversation Conversation[]
+
+  @@index([plz, status, category, createdAt])
+  @@index([createdAt])
+}
+
+model ActivityParticipant {
+  id         String   @id @default(uuid()) @db.Uuid
+  activityId String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+  @@index([userId, createdAt])
+  @@index([activityId, createdAt])
+}
+
+model ActivityImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  activityId String   @db.Uuid
+  url        String
+  sortOrder  Int      @default(0)
+  alt        String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, sortOrder])
+  @@index([activityId])
+}
+
+model UserWarning {
+  id               String          @id @default(uuid()) @db.Uuid
+  userId           String          @db.Uuid
+  message          String
+  severity         WarningSeverity @default(LOW)
+  expiresAt        DateTime?
+  createdByAdminId String          @db.Uuid
+  createdAt        DateTime        @default(now())
+  createdByAdmin   User            @relation("WarningsCreatedBy", fields: [createdByAdminId], references: [id])
+  user             User            @relation("WarningsReceived", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdByAdminId, createdAt])
+}
+
+model AuditLog {
+  id          String          @id @default(uuid()) @db.Uuid
+  actorUserId String?         @db.Uuid
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  action      AuditAction
+  entityType  AuditEntityType
+  actorUser   User?           @relation("AuditLogsByActor", fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model Conversation {
+  id                                     String             @id @default(uuid()) @db.Uuid
+  participantAId                         String             @db.Uuid
+  participantBId                         String             @db.Uuid
+  activityId                             String?            @db.Uuid
+  type                                   ConversationType   @default(DIRECT)
+  createdAt                              DateTime           @default(now())
+  updatedAt                              DateTime           @updatedAt
+  activity                               Activity?          @relation(fields: [activityId], references: [id])
+  participantA                           User               @relation("Conversation_participantAIdToUser", fields: [participantAId], references: [id], onDelete: Cascade)
+  participantB                           User               @relation("Conversation_participantBIdToUser", fields: [participantBId], references: [id], onDelete: Cascade)
+  participants                           ConversationParticipant[]
+  reads                                  ConversationRead[]
+  messages                               Message[]
+
+  @@unique([participantAId, participantBId, activityId])
+  @@index([participantAId, updatedAt])
+  @@index([participantBId, updatedAt])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  userId         String       @db.Uuid
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, joinedAt])
+}
+
+model ConversationRead {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  userId         String       @db.Uuid
+  lastReadAt     DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  senderId       String       @db.Uuid
+  body           String
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ActivityStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ActivityCategory {
+  OUTDOOR
+  SOCIAL
+  SPORT
+  INDOOR
+  HELP
+  OTHER
+}
+
+enum WarningSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AuditEntityType {
+  USER
+  ACTIVITY
+  USER_WARNING
+}
+
+enum AuditAction {
+  USER_ROLE_CHANGED
+  USER_BANNED
+  USER_UNBANNED
+  USER_WARNING_CREATED
+  ACTIVITY_ARCHIVED
+  ACTIVITY_RESTORED
+  ACTIVITIES_BULK_STATUS_CHANGED
+  ACTIVITY_EDITED
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}

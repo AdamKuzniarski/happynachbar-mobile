@@ -1,0 +1,263 @@
+{
+  "common": {
+    "loading": "…",
+    "saving": "Saving…",
+    "deleting": "Deleting…",
+    "fallback": "—"
+  },
+  "categories": {
+    "OUTDOOR": "Outdoor",
+    "SPORT": "Sports",
+    "SOCIAL": "Social",
+    "INDOOR": "Indoor",
+    "HELP": "Help",
+    "OTHER": "Other"
+  },
+  "header": {
+    "greeting": "Hello {name}",
+    "profileAria": "Profile",
+    "admin": "Admin",
+    "logoutAria": "Log out",
+    "back": "Back",
+    "loginAria": "Log in",
+    "chatAria": "Messages",
+    "switchToDe": "Switch to German",
+    "switchToEn": "Switch to English"
+  },
+  "landing": {
+    "title": "Welcome to happynachbar",
+    "subtitleLine1": "Create your own activities or find events and help near you.",
+    "subtitleLine2": "No hassle."
+  },
+  "postalCodeForm": {
+    "label": "Postal code",
+    "placeholder": "e.g. 10115",
+    "invalid": "Please enter a valid 5-digit postal code.",
+    "submit": "Continue"
+  },
+  "teaser": {
+    "nearbyCount": "{count, plural, =0 {# people are active near you!} =1 {# person is active near you!} other {# people are active near you!}}",
+    "cta": "Get to know your neighborhood",
+    "postalCodeLabel": "Postal code:"
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "loginSubtitle": "Sign in to discover your neighborhood.",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "loginButton": "Sign in",
+    "registerPrompt": "Don't have an account yet? Go to",
+    "registerLink": "Sign up",
+    "registerTitle": "Sign up",
+    "displayNamePlaceholder": "Display name (optional)",
+    "registerButton": "Create account",
+    "loginPrompt": "Already have an account? Go to",
+    "loginLink": "Log in",
+    "logoutTitle": "You have been logged out successfully.",
+    "logoutSubtitle": "Glad you stopped by — see you around the neighborhood.",
+    "verify": {
+      "loading": "Verifying…",
+      "success": "Email verified. You can now log in.",
+      "error": "Link is invalid or expired. Please resend the email."
+    }
+  },
+  "homepage": {
+    "filters": {
+      "searchPlaceholder": "Search…",
+      "allCategories": "All categories",
+      "postalCodePlaceholder": "Postal code",
+      "searchButton": "Find"
+    },
+    "section": {
+      "title": "Activities",
+      "suggestions": "{count, plural, =0 {No suggestions} =1 {# suggestion} other {# suggestions}}",
+      "loadError": "Error loading: {error}",
+      "empty": "No activities found."
+    },
+    "create": {
+      "aria": "Create new activity",
+      "label": "New"
+    },
+    "card": {
+      "start": "Start",
+      "postalCode": "Postal code",
+      "by": "By",
+      "updated": "Updated",
+      "neighbor": "Neighbor",
+      "fallback": "—"
+    },
+    "loadMore": {
+      "loadingMore": "Loading more…",
+      "loadingNext": "Loading more…",
+      "noMore": "No more"
+    }
+  },
+  "activities": {
+    "backToOverview": "Back to overview",
+    "backToActivity": "Back to activity",
+    "headingCreate": "Create a new activity",
+    "headingEdit": "Edit activity",
+    "form": {
+      "titleLabel": "Title *",
+      "titlePlaceholder": "e.g. Walk in the park",
+      "categoryLabel": "Category *",
+      "categoryPlaceholder": "Please select",
+      "postalCodeLabel": "Postal code *",
+      "postalCodePlaceholder": "10115",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Optional…",
+      "startAtLabel": "Start time (optional)"
+    },
+    "images": {
+      "label": "Images (optional)",
+      "selectedCount": "{count, plural, =1 {# image selected} other {# images selected}}",
+      "alt": "Activity image",
+      "remove": "Remove",
+      "urlLabel": "Image URL (optional)",
+      "urlPlaceholder": "https://…",
+      "addUrlButton": "+ add another image",
+      "reorderHint": "You can reorder images via drag & drop.",
+      "status": {
+        "invalid": "Please enter a valid http(s) URL.",
+        "limit": "Maximum 5 images in total.",
+        "duplicate": "Not added because it is a duplicate.",
+        "added": "URL added."
+      }
+    },
+    "errors": {
+      "titleMin": "Title must be at least 3 characters.",
+      "categoryRequired": "Please select a category.",
+      "postalCodeInvalid": "Postal code must be exactly 5 digits.",
+      "maxImages": "Maximum 5 images in total.",
+      "createFailed": "Failed to create.",
+      "uploadFailed": "Upload failed.",
+      "notOwner": "You can only edit or delete activities you created.",
+      "deleteFailed": "Delete failed.",
+      "missingActivity": "Missing activity.",
+      "loginRequired": "Please log in.",
+      "chatStartFailed": "Chat could not be started.",
+      "invalidResponse": "Invalid response."
+    },
+    "actions": {
+      "save": "Save",
+      "create": "Create",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "join": "Join activity",
+      "joinCta": "Join this activity",
+      "joinHelper": "One click adds you to the participants list.",
+      "joinedHelper": "You're already participating.",
+      "joined": "You are participating",
+      "leave": "Leave",
+      "groupChat": "Group chat"
+    },
+    "labels": {
+      "postalCode": "Postal code",
+      "createdBy": "Created by",
+      "start": "Start",
+      "updated": "Updated",
+      "participants": "Participants",
+      "description": "Description",
+      "bio": "Bio",
+      "memberSince": "Member since"
+    },
+    "loadingParticipants": "Loading participants…",
+    "noParticipants": "No participants yet.",
+    "aria": {
+      "profileLink": "Go to profile"
+    },
+    "fallback": {
+      "neighbor": "Neighbor",
+      "noBio": "No bio yet.",
+      "empty": "—"
+    },
+    "confirmDelete": "Delete this activity?",
+    "creator": {
+      "profileTitle": "Profile",
+      "avatarAlt": "{name} avatar",
+      "contact": "Contact",
+      "contactAria": "Contact"
+    },
+    "gallery": {
+      "expandAria": "Expand image",
+      "close": "Close",
+      "prev": "Previous image",
+      "next": "Next image"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "editTitle": "Edit profile",
+    "backToOverview": "Back to overview",
+    "loginCta": "Go to login",
+    "editCta": "Edit profile",
+    "avatarAlt": "{name} avatar",
+    "labels": {
+      "displayName": "Display name",
+      "postalCode": "Postal code",
+      "bio": "Bio",
+      "memberSince": "Member since"
+    },
+    "status": {
+      "title": "Profile status",
+      "completion": "Profile {percent}% complete"
+    },
+    "fallback": {
+      "neighbor": "Neighbor",
+      "noBio": "No bio yet.",
+      "empty": "—"
+    },
+    "form": {
+      "avatarLabel": "Avatar",
+      "avatarUrlPlaceholder": "https://…",
+      "uploading": "Uploading…",
+      "displayNameLabel": "Display name",
+      "displayNamePlaceholder": "e.g. Julia",
+      "postalCodeLabel": "Postal code",
+      "postalCodePlaceholder": "e.g. 10115",
+      "bioLabel": "Bio",
+      "bioPlaceholder": "Tell us a bit about yourself…"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "notLoggedIn": "Please log in to view your profile.",
+      "notLoggedInEdit": "Please log in to edit your profile.",
+      "loadFailed": "Profile could not be loaded.",
+      "noChanges": "No changes to save.",
+      "saveFailed": "Profile could not be saved.",
+      "uploadFailed": "Upload failed."
+    }
+  },
+  "chat": {
+    "inboxTitle": "Messages",
+    "backToOverview": "Back to overview",
+    "emptyInbox": "No chats yet.",
+    "neighbor": "Neighbor",
+    "activityLabel": " · about activity: {title}",
+    "loadMore": "Load older messages",
+    "groupChat": "Activity chat",
+    "groupLabel": " · group",
+    "errors": {
+      "unknown": "Unknown error"
+    },
+    "chatWith": "Chat with {name}",
+    "creator": "Creator",
+    "activityTitle": "Activity: {title}",
+    "emptyMessages": "No messages yet.",
+    "you": "You",
+    "edited": "edited",
+    "editMessageAria": "Edit message",
+    "deleteMessageAria": "Delete message",
+    "messageDeleted": "Message deleted.",
+    "editHints": "Esc to cancel • Enter to save ·",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete this message?",
+    "messagePlaceholder": "Message…",
+    "send": "Send"
+  }
+}

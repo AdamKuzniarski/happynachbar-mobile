@@ -1,0 +1,59 @@
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025" # Mailpit UI
+      - "1025:1025" # SMTP
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: happynachbar
+    ports:
+      - "5433:5432" # Zugriff vom Host
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d happynachbar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    init: true
+    build:
+      context: ./apps/api
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./apps/api/.env.example
+    environment:
+      SMTP_HOST: "mailpit"
+      SMTP_PORT: "1025"
+      MAIL_FROM: "noreply@happynachbar.local"
+      WEB_URL: "http://localhost:3000"
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/happynachbar?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: happynachbar-web
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_SHOW_ADMIN_LINK: "false"
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:

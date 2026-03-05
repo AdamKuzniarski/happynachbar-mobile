@@ -1,0 +1,263 @@
+{
+  "common": {
+    "loading": "…",
+    "saving": "Speichern…",
+    "deleting": "Löschen…",
+    "fallback": "—"
+  },
+  "categories": {
+    "OUTDOOR": "Outdoor",
+    "SPORT": "Sport",
+    "SOCIAL": "Sozial",
+    "INDOOR": "Indoor",
+    "HELP": "Hilfe",
+    "OTHER": "Sonstiges"
+  },
+  "header": {
+    "greeting": "Hallo {name}",
+    "profileAria": "Profil",
+    "admin": "Admin",
+    "logoutAria": "Logout",
+    "back": "Zurück",
+    "loginAria": "Login",
+    "chatAria": "Nachrichten",
+    "switchToDe": "Zu Deutsch wechseln",
+    "switchToEn": "Zu Englisch wechseln"
+  },
+  "landing": {
+    "title": "Herzlich Willkommen bei happynachbar",
+    "subtitleLine1": "Erstelle eigene Aktivitäten oder finde Events und Hilfsangebote in deiner Nähe.",
+    "subtitleLine2": "Ganz unkompliziert."
+  },
+  "postalCodeForm": {
+    "label": "Postleitzahl",
+    "placeholder": "z.B. 10115",
+    "invalid": "Bitte gib eine gültige 5-stellige Postleitzahl ein.",
+    "submit": "Weiter"
+  },
+  "teaser": {
+    "nearbyCount": "{count, plural, =0 {# Personen sind gerade in deiner Nähe aktiv!} =1 {# Person ist gerade in deiner Nähe aktiv!} other {# Personen sind gerade in deiner Nähe aktiv!}}",
+    "cta": "Lerne deine Nachbarschaft kennen",
+    "postalCodeLabel": "PLZ:"
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "loginSubtitle": "Melde dich an, um deine Nachbarschaft zu entdecken.",
+    "emailPlaceholder": "E-Mail",
+    "passwordPlaceholder": "Passwort",
+    "loginButton": "Anmelden",
+    "registerPrompt": "Du hast noch kein Konto? Dann hier entlang zum",
+    "registerLink": "Registrieren",
+    "registerTitle": "Registrieren",
+    "displayNamePlaceholder": "Anzeigename (optional)",
+    "registerButton": "Konto erstellen",
+    "loginPrompt": "Du hast bereits ein Konto? Dann hier entlang zum",
+    "loginLink": "Login",
+    "logoutTitle": "Du bist erfolgreich ausgeloggt.",
+    "logoutSubtitle": "Schön, dass du da warst – bis bald in der Nachbarschaft.",
+    "verify": {
+      "loading": "Verifiziere…",
+      "success": "E-Mail bestätigt. Du kannst dich jetzt einloggen.",
+      "error": "Link ungültig oder abgelaufen. Bitte „Mail erneut senden“."
+    }
+  },
+  "homepage": {
+    "filters": {
+      "searchPlaceholder": "Suche…",
+      "allCategories": "Alle Kategorien",
+      "postalCodePlaceholder": "PLZ",
+      "searchButton": "Finden"
+    },
+    "section": {
+      "title": "Aktivitäten",
+      "suggestions": "{count, plural, =0 {Keine Vorschläge} =1 {# Vorschlag} other {# Vorschläge}}",
+      "loadError": "Fehler beim Laden: {error}",
+      "empty": "Keine Aktivitäten gefunden."
+    },
+    "create": {
+      "aria": "Neue Aktivität erstellen",
+      "label": "Neu"
+    },
+    "card": {
+      "start": "Start",
+      "postalCode": "PLZ",
+      "by": "Von",
+      "updated": "Aktualisiert",
+      "neighbor": "Nachbar",
+      "fallback": "—"
+    },
+    "loadMore": {
+      "loadingMore": "Lade mehr…",
+      "loadingNext": "Lade weitere…",
+      "noMore": "Keine weiteren"
+    }
+  },
+  "activities": {
+    "backToOverview": "Zurück zur Übersicht",
+    "backToActivity": "Zurück zur Aktivität",
+    "headingCreate": "Erstelle eine neue Aktivität",
+    "headingEdit": "Aktivität bearbeiten",
+    "form": {
+      "titleLabel": "Titel *",
+      "titlePlaceholder": "z.B. Spaziergang im Park",
+      "categoryLabel": "Kategorie *",
+      "categoryPlaceholder": "Bitte wählen",
+      "postalCodeLabel": "PLZ *",
+      "postalCodePlaceholder": "10115",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "Optional…",
+      "startAtLabel": "Startzeit (optional)"
+    },
+    "images": {
+      "label": "Bilder (optional)",
+      "selectedCount": "{count, plural, =1 {# Bild ausgewählt} other {# Bilder ausgewählt}}",
+      "alt": "Aktivitätsbild",
+      "remove": "Entfernen",
+      "urlLabel": "Bild-URL (optional)",
+      "urlPlaceholder": "https://…",
+      "addUrlButton": "+ weiteres Bild",
+      "reorderHint": "Bilder kannst du per Drag & Drop neu anordnen.",
+      "status": {
+        "invalid": "Bitte eine gültige http(s) URL eingeben.",
+        "limit": "Maximal 5 Bilder insgesamt erlaubt.",
+        "duplicate": "Wurde nicht hinzugefügt, es handelt sich um ein Duplikat.",
+        "added": "URL hinzugefügt."
+      }
+    },
+    "errors": {
+      "titleMin": "Titel muss mindestens 3 Zeichen haben.",
+      "categoryRequired": "Bitte Kategorie auswählen.",
+      "postalCodeInvalid": "PLZ muss genau 5 Ziffern sein.",
+      "maxImages": "Maximal 5 Bilder insgesamt erlaubt.",
+      "createFailed": "Fehler beim Erstellen.",
+      "uploadFailed": "Upload fehlgeschlagen.",
+      "notOwner": "Du kannst nur Aktivitäten bearbeiten/löschen, die du auch erstellt hast",
+      "deleteFailed": "Löschen fehlgeschlagen.",
+      "missingActivity": "Fehlende Aktivität.",
+      "loginRequired": "Bitte einloggen.",
+      "chatStartFailed": "Chat konnte nicht gestartet werden.",
+      "invalidResponse": "Ungültige Antwort."
+    },
+    "actions": {
+      "save": "Speichern",
+      "create": "Erstellen",
+      "cancel": "Abbrechen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "join": "Teilnehmen",
+      "joinCta": "An der Aktivität teilnehmen",
+      "joinHelper": "Mit einem Klick wirst du als Teilnehmende*r eingetragen.",
+      "joinedHelper": "Du nimmst an dieser Aktivität teil.",
+      "joined": "Du nimmst teil",
+      "leave": "Verlassen",
+      "groupChat": "Gruppenchat"
+    },
+    "labels": {
+      "postalCode": "PLZ",
+      "createdBy": "Erstellt von",
+      "start": "Start",
+      "updated": "Aktualisiert",
+      "participants": "Teilnehmende",
+      "description": "Beschreibung",
+      "bio": "Bio",
+      "memberSince": "Mitglied seit"
+    },
+    "loadingParticipants": "Teilnehmende werden geladen…",
+    "noParticipants": "Noch keine Teilnehmenden.",
+    "aria": {
+      "profileLink": "Zum Profil"
+    },
+    "fallback": {
+      "neighbor": "Nachbar",
+      "noBio": "Noch keine Bio hinterlegt.",
+      "empty": "—"
+    },
+    "confirmDelete": "Aktivität wirklich löschen?",
+    "creator": {
+      "profileTitle": "Profil",
+      "avatarAlt": "{name} Avatar",
+      "contact": "Kontaktieren",
+      "contactAria": "Kontaktieren"
+    },
+    "gallery": {
+      "expandAria": "Bild vergrößern",
+      "close": "Schließen",
+      "prev": "Vorheriges Bild",
+      "next": "Nächstes Bild"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "editTitle": "Profil bearbeiten",
+    "backToOverview": "Zurück zur Übersicht",
+    "loginCta": "Zum Login",
+    "editCta": "Profil bearbeiten",
+    "avatarAlt": "{name} Avatar",
+    "labels": {
+      "displayName": "Displayname",
+      "postalCode": "PLZ",
+      "bio": "Bio",
+      "memberSince": "Mitglied seit"
+    },
+    "status": {
+      "title": "Profilstatus",
+      "completion": "Profil zu {percent}% vollständig"
+    },
+    "fallback": {
+      "neighbor": "Nachbar",
+      "noBio": "Noch keine Bio hinterlegt.",
+      "empty": "—"
+    },
+    "form": {
+      "avatarLabel": "Avatar",
+      "avatarUrlPlaceholder": "https://…",
+      "uploading": "Upload läuft…",
+      "displayNameLabel": "Displayname",
+      "displayNamePlaceholder": "z.B. Julia",
+      "postalCodeLabel": "PLZ",
+      "postalCodePlaceholder": "z.B. 10115",
+      "bioLabel": "Bio",
+      "bioPlaceholder": "Erzähl kurz etwas über dich…"
+    },
+    "actions": {
+      "save": "Speichern",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "notLoggedIn": "Bitte logge dich ein, um dein Profil zu sehen.",
+      "notLoggedInEdit": "Bitte logge dich ein, um dein Profil zu bearbeiten.",
+      "loadFailed": "Profil konnte nicht geladen werden.",
+      "noChanges": "Keine Änderungen zum Speichern.",
+      "saveFailed": "Profil konnte nicht gespeichert werden.",
+      "uploadFailed": "Upload fehlgeschlagen."
+    }
+  },
+  "chat": {
+    "inboxTitle": "Nachrichten",
+    "backToOverview": "Zurück zur Übersicht",
+    "emptyInbox": "Noch keine Chats.",
+    "neighbor": "Nachbar",
+    "activityLabel": " · zur Aktivität: {title}",
+    "loadMore": "Ältere Nachrichten laden",
+    "groupChat": "Gruppenchat",
+    "groupLabel": " · Gruppe",
+    "errors": {
+      "unknown": "Unbekannter Fehler"
+    },
+    "chatWith": "Chat mit {name}",
+    "creator": "Ersteller",
+    "activityTitle": "Aktivität: {title}",
+    "emptyMessages": "Noch keine Nachrichten.",
+    "you": "Du",
+    "edited": "bearbeitet",
+    "editMessageAria": "Nachricht bearbeiten",
+    "deleteMessageAria": "Nachricht löschen",
+    "messageDeleted": "Nachricht gelöscht.",
+    "editHints": "Esc zum Abbrechen • Enter zum Speichern ·",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "confirmDelete": "Diese Nachricht wirklich löschen?",
+    "messagePlaceholder": "Nachricht…",
+    "send": "Senden"
+  }
+}

@@ -1,8 +1,13 @@
 {
-  "name": "happynachbar-mobile",
+  "name": "happynachbar",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev:mobile": "npm -w apps/mobile run start"
+    "dev:mobile": "npm -w apps/mobile run start",
+    "dev:web": "npm -w apps/web run dev",
+    "dev:api": "npm -w apps/api run start:dev"
   }
 }
