@@ -3,7 +3,7 @@ import { Text, View, StyleSheet } from "react-native";
 export default function Index() {
   return (
     <View style={styles.container}>
-      <Text>Edit src/app/index.tsx to edit t screen.</Text>
+      <Text className="color-amber-200">Edit src/app/index.tsx to edit t screen.</Text>
     </View>
   );
 }
