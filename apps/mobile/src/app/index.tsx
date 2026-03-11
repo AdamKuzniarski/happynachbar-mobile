@@ -1,17 +1,5 @@
-import { Text, View, StyleSheet } from "react-native";
-
+import LandingPage from "@/app/(public)/landing";
+import { Redirect } from "expo-router";
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text className="color-amber-200">Edit src/app/index.tsx to edit t screen.</Text>
-    </View>
-  );
+  return <Redirect href="/landing" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
