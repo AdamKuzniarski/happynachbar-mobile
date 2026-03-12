@@ -58,6 +58,16 @@ This command will move the starter code to the **app-example** directory and cre
 2. Open `Settings/Preferences > Languages & Frameworks > JavaScript > Prettier`.
 3. Enable `On code reformat` and `On save` so files are formatted automatically.
 
+### Mobile API base URL setup
+
+The mobile app reads `EXPO_PUBLIC_API_URL` from `apps/mobile/.env`.
+
+- iOS simulator: `http://localhost:4000`
+- Android emulator: `http://10.0.2.2:4000`
+- Physical device: `http://<your-lan-ip>:4000` (same Wi-Fi as your dev machine)
+
+You can use `apps/mobile/.env.example` as reference for local setup.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
