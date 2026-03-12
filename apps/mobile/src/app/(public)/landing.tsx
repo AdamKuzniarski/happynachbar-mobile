@@ -37,12 +37,12 @@ export default function LandingPage() {
 
           <TextInput
             value={postalCode}
-            onChangeText={handleContinue}
+            onChangeText={handlePostalCodeChange}
             keyboardType="number-pad"
             placeholder="z.B. 10115"
             placeholderTextColor={colors.dark.brand}
             maxLength={5}
-            className="h-12 w-40 rounded-md border border-app-dark-brand bg-app-light-bg px-4 text-center text-base text-app-dark-text"
+            className="h-12 w-40 rounded-md border border-app-dark-brand bg-app-light-bg px-4 text-center text-base text-app-light-text"
           />
 
           <Pressable
