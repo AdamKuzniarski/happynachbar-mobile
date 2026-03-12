@@ -17,7 +17,7 @@ export default function LandingPage() {
     isValid && setPostalCode("");
 
     await AsyncStorage.setItem("postalCode", postalCode);
-    //router.push("/login");
+    router.push("/login");
   }
 
   return (
