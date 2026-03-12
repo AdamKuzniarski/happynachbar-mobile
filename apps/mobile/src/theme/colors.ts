@@ -4,6 +4,7 @@ export const basePalette = {
   card: '[#4](#4)F742F',
   lightText: '[#1](#1)F2A1A',
   darkText: '#F3F6EE',
+  darkPlaceholder: '#B8C3AF',
   lightBg: '#F7F8F5',
   darkBg: '[#132910](#132910)',
 };
@@ -21,6 +22,7 @@ export const colors = {
     accent: basePalette.accent,
     card: basePalette.card,
     text: basePalette.darkText,
+    placeholder: basePalette.darkPlaceholder,
     bg: basePalette.darkBg,
   },
 };

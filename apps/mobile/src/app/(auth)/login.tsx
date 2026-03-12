@@ -34,7 +34,7 @@ export default function LoginPage() {
               value={email}
               onChangeText={setEmail}
               placeholder="E-Mail"
-              placeholderTextColor={colors.dark.brand}
+              placeholderTextColor={colors.dark.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -47,7 +47,7 @@ export default function LoginPage() {
               value={password}
               onChangeText={setPassword}
               placeholder="Password"
-              placeholderTextColor={colors.dark.brand}
+              placeholderTextColor={colors.dark.placeholder}
               secureTextEntry
               className={
                 'h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text'
@@ -68,7 +68,10 @@ export default function LoginPage() {
           </Pressable>
 
           <Text className={'mt-5 text-center text-sm leading-6 text-app-dark-brand'}>
-            Du hast noch keinen Account? <Text className={'underline'}>Zum Registrieren.</Text>
+            Du hast noch keinen Account?{' '}
+            <Text onPress={() => router.push('/register')} className={'font-semibold underline'}>
+              Zum Registrieren.
+            </Text>
           </Text>
         </View>
       </View>

@@ -40,7 +40,7 @@ export default function LandingPage() {
             onChangeText={handlePostalCodeChange}
             keyboardType="number-pad"
             placeholder="z.B. 10115"
-            placeholderTextColor={colors.dark.brand}
+            placeholderTextColor={colors.dark.placeholder}
             maxLength={5}
             className="h-12 w-40 rounded-md border border-app-dark-brand bg-app-light-bg px-4 text-center text-base text-app-light-text"
           />
