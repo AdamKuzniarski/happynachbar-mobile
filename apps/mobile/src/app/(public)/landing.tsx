@@ -1,14 +1,9 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, Text,  Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 
-
 export default function LandingPage() {
-
-
   async function handleContinue() {
-   ;
-
     router.push('/login');
   }
 
@@ -20,21 +15,20 @@ export default function LandingPage() {
             Herzlich Willkommen bei happynachbar
           </Text>
           <Text className="mb-12 text-center text-base leading-8 text-app-dark-brand">
-            Erstelle eigene Aktivitäten oder finde{"\n"} Events und Hilfsangebote in deiner Nähe.{"\n"}Ganz
-            unkompliziert.
+            Erstelle eigene Aktivitäten oder finde{'\n'} Events und Hilfsangebote in deiner Nähe.
+            {'\n'}Ganz unkompliziert.
           </Text>
-          <View className="w-full items-center">
-      
-          </View>
-
+          <View className="w-full items-center"></View>
 
           <Pressable
             onPress={handleContinue}
-           
-            className={"mt-5 h-12 w-full items-center justify-center rounded-md bg-app-dark-accent "}
-            
+            className={
+              'mt-5 h-12 w-full items-center justify-center rounded-md bg-app-dark-accent '
+            }
           >
-            <Text className="text-center font-semibold text-app-dark-text">Entdecke deine Nachbarschaft!</Text>
+            <Text className="text-center font-semibold text-app-dark-text">
+              Entdecke deine Nachbarschaft!
+            </Text>
           </Pressable>
         </View>
       </View>
