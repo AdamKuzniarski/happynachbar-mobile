@@ -1,23 +1,23 @@
-import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, TextInput, Pressable } from "react-native";
-import { useState } from "react";
-import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "../../theme/colors";
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TextInput, Pressable } from 'react-native';
+import { useState } from 'react';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors } from '../../theme/colors';
 
 export default function LandingPage() {
-  const [postalCode, setPostalCode] = useState("");
+  const [postalCode, setPostalCode] = useState('');
   const isValid = postalCode.length === 5;
 
   function handlePostalCodeChange(value: string) {
-    setPostalCode(value.replace(/\D/g, "").slice(0, 5));
+    setPostalCode(value.replace(/\D/g, '').slice(0, 5));
   }
 
   async function handleContinue() {
-    isValid && setPostalCode("");
+    isValid && setPostalCode('');
 
-    await AsyncStorage.setItem("postalCode", postalCode);
-    router.push("/login");
+    await AsyncStorage.setItem('postalCode', postalCode);
+    router.push('/login');
   }
 
   return (
@@ -49,7 +49,7 @@ export default function LandingPage() {
             onPress={handleContinue}
             disabled={!isValid}
             className={`mt-5 h-12 w-full items-center justify-center rounded-md ${
-              isValid ? "bg-app-dark-accent" : "bg-app-dark-card opacity-70"
+              isValid ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
             }`}
           >
             <Text className="text-base font-semibold text-app-dark-text">Weiter</Text>

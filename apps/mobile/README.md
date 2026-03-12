@@ -41,6 +41,23 @@ This command will move the starter code to the **app-example** directory and cre
 - If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
+### Code formatting (Prettier)
+
+- Run `npm run format` to format all files.
+- Run `npm run format:check` to verify formatting in CI or before committing.
+
+#### VS Code setup
+
+1. Install the extension `Prettier - Code formatter` (`esbenp.prettier-vscode`).
+2. Open VS Code settings and enable `Editor: Format On Save`.
+3. Set `Prettier` as your default formatter for this workspace.
+
+#### IntelliJ setup
+
+1. Open `Settings/Preferences > Plugins` and install `Prettier` (if not already installed).
+2. Open `Settings/Preferences > Languages & Frameworks > JavaScript > Prettier`.
+3. Enable `On code reformat` and `On save` so files are formatted automatically.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
