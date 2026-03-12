@@ -57,7 +57,7 @@ export default function RegisterPage() {
               value={displayName}
               onChangeText={setDisplayName}
               placeholder="Anzeigename (optional)"
-              placeholderTextColor={colors.dark.brand}
+              placeholderTextColor={colors.dark.placeholder}
               autoCapitalize="words"
               className="h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"
             />
@@ -66,7 +66,7 @@ export default function RegisterPage() {
               value={email}
               onChangeText={setEmail}
               placeholder="E-Mail"
-              placeholderTextColor={colors.dark.brand}
+              placeholderTextColor={colors.dark.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -79,14 +79,12 @@ export default function RegisterPage() {
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="Passwort"
-              placeholderTextColor={colors.dark.brand}
+              placeholder="Passwort (mind. 8 Zeichen)"
+              placeholderTextColor={colors.dark.placeholder}
               secureTextEntry
               className="h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"
             />
-            <Text className="-mt-2 text-sm text-app-dark-brand">
-              Das Passwort muss mindestens 8 Zeichen lang sein.
-            </Text>
+
             {passwordError ? (
               <Text className="-mt-2 text-sm text-app-dark-brand">{passwordError}</Text>
             ) : null}
