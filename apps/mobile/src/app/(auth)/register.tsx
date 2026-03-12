@@ -91,9 +91,7 @@ export default function RegisterPage() {
               onPress={handleCreateAccount}
               disabled={!isValid || isSubmitting}
               className={`h-12 items-center justify-center rounded-md ${
-                isValid && !isSubmitting
-                  ? 'bg-app-dark-accent'
-                  : 'bg-app-dark-card opacity-70'
+                isValid && !isSubmitting ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
               }`}
             >
               <Text className="text-base font-semibold text-app-dark-text">
