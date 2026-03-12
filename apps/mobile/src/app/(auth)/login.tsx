@@ -15,7 +15,7 @@ export default function LoginPage() {
         if (!isValid) return;
 
        await AsyncStorage.setItem("authToken", "demo-token");
-        // router.replace("/home");
+        router.replace("/home");
 
     }
 
@@ -40,6 +40,15 @@ export default function LoginPage() {
                             autoCapitalize="none"
                             autoCorrect={false}
                             className={"h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"}
+                        />
+
+                        <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="Password"
+                        placeholderTextColor={colors.dark.brand}
+                        secureTextEntry
+                        className={"h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"}
                         />
                         <Pressable
                             onPress={handleLogin}
