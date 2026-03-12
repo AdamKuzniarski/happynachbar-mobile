@@ -15,11 +15,13 @@ export default function RegisterPage() {
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isPasswordValid = password.length >= 8;
   const isValid = isEmailValid && isPasswordValid;
+  const showEmailError = submitted && !isEmailValid;
+  const showPasswordError = submitted && !isPasswordValid;
 
-  const emailError =
-    submitted && !isEmailValid ? 'Bitte gib eine gültige E-Mail-Adresse ein.' : null;
-  const passwordError =
-    submitted && !isPasswordValid ? 'Das Passwort muss mindestens 8 Zeichen lang sein.' : null;
+  const emailError = showEmailError ? 'Bitte gib eine gültige E-Mail-Adresse ein.' : null;
+  const passwordError = showPasswordError
+    ? 'Das Passwort muss mindestens 8 Zeichen lang sein.'
+    : null;
 
   async function handleCreateAccount() {
     setSubmitted(true);
@@ -70,30 +72,32 @@ export default function RegisterPage() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              className="h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"
+              className={`h-12 rounded-md border bg-app-dark-bg px-4 text-base text-app-dark-text ${
+                showEmailError ? 'border-red-500' : 'border-app-dark-card'
+              }`}
             />
-            {emailError ? (
-              <Text className="-mt-2 text-sm text-app-dark-brand">{emailError}</Text>
-            ) : null}
+            {emailError ? <Text className="-mt-2 text-sm text-red-400">{emailError}</Text> : null}
 
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="Passwort (mind. 8 Zeichen)"
+              placeholder="Passwort"
               placeholderTextColor={colors.dark.placeholder}
               secureTextEntry
-              className="h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"
+              className={`h-12 rounded-md border bg-app-dark-bg px-4 text-base text-app-dark-text ${
+                showPasswordError ? 'border-red-500' : 'border-app-dark-card'
+              }`}
             />
 
             {passwordError ? (
-              <Text className="-mt-2 text-sm text-app-dark-brand">{passwordError}</Text>
+              <Text className="-mt-2 text-sm text-red-400">{passwordError}</Text>
             ) : null}
 
             <Pressable
               onPress={handleCreateAccount}
-              disabled={!isValid || isSubmitting}
+              disabled={isSubmitting}
               className={`h-12 items-center justify-center rounded-md ${
-                isValid && !isSubmitting ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
+                isSubmitting ? 'bg-app-dark-card opacity-70' : 'bg-app-dark-accent'
               }`}
             >
               <Text className="text-base font-semibold text-app-dark-text">
