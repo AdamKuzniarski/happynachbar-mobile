@@ -84,6 +84,9 @@ export default function RegisterPage() {
               secureTextEntry
               className="h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text"
             />
+            <Text className="-mt-2 text-sm text-app-dark-brand">
+              Das Passwort muss mindestens 8 Zeichen lang sein.
+            </Text>
             {passwordError ? (
               <Text className="-mt-2 text-sm text-app-dark-brand">{passwordError}</Text>
             ) : null}
