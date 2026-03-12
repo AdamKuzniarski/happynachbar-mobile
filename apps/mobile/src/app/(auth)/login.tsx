@@ -68,7 +68,10 @@ export default function LoginPage() {
           </Pressable>
 
           <Text className={'mt-5 text-center text-sm leading-6 text-app-dark-brand'}>
-            Du hast noch keinen Account? <Text className={'underline'}>Zum Registrieren.</Text>
+            Du hast noch keinen Account?{' '}
+            <Text onPress={() => router.push('/register')} className={'font-semibold underline'}>
+              Zum Registrieren.
+            </Text>
           </Text>
         </View>
       </View>
