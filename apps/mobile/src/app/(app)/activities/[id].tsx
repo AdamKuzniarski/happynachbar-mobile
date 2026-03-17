@@ -129,7 +129,7 @@ export default function ActivityDetailPage() {
             <View className={'h-64 w-full rounded-md bg-app-dark-card'} />
           )}
 
-          <View className={'rounded-md border broder-app-dark-card bg-app-dark-bg p-4'}>
+          <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
             <Text className={'text-2xl font-bold text-app-dark-text'}>{activity.title}</Text>
 
             <View className={'mt-4 gap-2'}>
@@ -154,7 +154,7 @@ export default function ActivityDetailPage() {
               </Text>
             </View>
           </View>
-          <View className={'rounded-md border broder-app-dark-card bg-app-dark-bg p-4'}>
+          <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
             <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>Beschreibung</Text>
 
             <Text className={'text-md leading-6 text-app-dark-brand'}>
