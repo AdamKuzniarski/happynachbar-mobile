@@ -92,6 +92,13 @@ export default function HomePage() {
         }}
         refreshing={refreshing}
         contentContainerStyle={{ padding: 16, gap: 12 }}
+        ListHeaderComponent={
+          <Text className="mb-1 text-xs text-app-dark-brand">
+            {refreshing
+              ? 'Aktualisiere Aktivitäten...'
+              : 'Ziehe nach unten, um die Aktivitäten zu aktualisieren.'}
+          </Text>
+        }
         renderItem={({ item }) => (
           <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
             <Text className="text-lg font-bold text-app-dark-text">{item.title}</Text>
