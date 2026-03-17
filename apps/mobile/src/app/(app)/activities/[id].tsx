@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/lib/api';
-import { getActivitiy, type ActivityDetail } from '@/lib/activities';
+import { getActivity, type ActivityDetail } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
 
 export default function ActivityDetailPage() {
@@ -33,7 +33,7 @@ export default function ActivityDetailPage() {
       setNotFound(false);
 
       try {
-        const data = await getActivitiy(activityId);
+        const data = await getActivity(activityId);
         setActivity(data);
       } catch (err) {
         const apiError = err as ApiError;
