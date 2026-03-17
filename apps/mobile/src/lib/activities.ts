@@ -47,6 +47,6 @@ export function listActivities(params: ListActivitiesParams = {}) {
   return apiRequest<ListActivitiesResponse>(`/activities${query}`);
 }
 
-export function getActivitiy(id: string) {
-  return apiRequest<Activity>(`/activities/${id}`);
+export function getActivity(id: string) {
+  return apiRequest<ActivityDetail>(`/activities/${id}`);
 }

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
-import SafeAreaViewWeb, { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/lib/api';
 import { getActivitiy, type ActivityDetail } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
@@ -16,39 +16,42 @@ export default function ActivityDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  async function loadActivity() {
-    if (!activityId) {
-      setActivity(null);
-      setError(null);
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setNotFound(false);
-
-    try {
-      const data = await getActivitiy(activityId);
-      setActivity(data);
-    } catch (err) {
-      const apiError = err as ApiError;
-
-      setActivity(null);
-
-      if (apiError?.status === 404 || apiError?.status === 400) {
-        setNotFound(true);
-      } else {
-        setError('Aktivität konnte nicht geladen werden.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
   useEffect(() => {
-    loadActivity().catch(() => {});
-  }, [activityId]);
+    async function run() {
+      if (!activityId) {
+        setActivity(null);
+        setError(null);
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+
+      try {
+        const data = await getActivitiy(activityId);
+        setActivity(data);
+      } catch (err) {
+        const apiError = err as ApiError;
+
+        setActivity(null);
+
+        if (apiError?.status === 404) {
+          setNotFound(true);
+        } else {
+          setError('Aktivität konnte nicht geladen werden.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    run().catch(() => {});
+  }, [activityId, reloadKey]);
 
   const imageUrl = activity?.images?.[0]?.url ?? activity?.thumbnailUrl ?? null;
   const creatorName = activity?.createdBy?.displayName?.trim() || 'Neighbor';
@@ -91,7 +94,7 @@ export default function ActivityDetailPage() {
           <Text className={'text-base text-app-dark-brand'}>{error}</Text>
 
           <Pressable
-            onPress={() => loadActivity().catch(() => {})}
+            onPress={() => setReloadKey((prev) => prev + 1)}
             className={
               'h-11 min-w-32 items-center justify-center rounded-md bg-app-dark-accent px-5'
             }
