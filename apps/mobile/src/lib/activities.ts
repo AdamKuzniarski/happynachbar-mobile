@@ -19,6 +19,14 @@ export type ListActivitiesResponse = {
   nextCursor: string | null;
 };
 
-export function listActivities() {
-  return apiRequest<ListActivitiesResponse>('/activities');
+type ListActivitiesParams = {
+  cursor?: string | null;
+};
+
+export function listActivities(params: ListActivitiesParams = {}) {
+  const query = params.cursor
+    ? `?cursor=${encodeURIComponent(params.cursor)}`
+    : '';
+
+  return apiRequest<ListActivitiesResponse>(`/activities${query}`);
 }

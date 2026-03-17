@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { listActivities, type Activity } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
@@ -8,38 +8,82 @@ export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadActivities = useCallback(async () => {
+  async function loadFirstPage() {
     setError(null);
 
     try {
-      const response = await listActivities();
-      setItems(response.items ?? []);
+      const page = await listActivities();
+      setItems(page.items ?? []);
+      setNextCursor(page.nextCursor ?? null);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }
 
-  const handleRefresh = useCallback(async () => {
+  async function handleRefresh() {
     setRefreshing(true);
     setError(null);
 
     try {
-      const response = await listActivities();
-      setItems(response.items ?? []);
+      const page = await listActivities();
+      setItems(page.items ?? []);
+      setNextCursor(page.nextCursor ?? null);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }
+
+  async function handleLoadMore() {
+    if (!nextCursor || loading || refreshing || loadingMore) return;
+
+    setLoadingMore(true);
+
+    try {
+      const page = await listActivities({ cursor: nextCursor });
+      setItems((prev) => [...prev, ...(page.items ?? [])]);
+      setNextCursor(page.nextCursor ?? null);
+    } catch {
+      setError('Weitere Aktivitäten konnten nicht geladen werden.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  function onRefreshList() {
+    handleRefresh().catch(() => {});
+  }
+
+  function onReachListEnd() {
+    handleLoadMore().catch(() => {});
+  }
+
+  function onRetryFirstPage() {
+    setLoading(true);
+    loadFirstPage().catch(() => {});
+  }
 
   useEffect(() => {
-    void loadActivities();
-  }, [loadActivities]);
+    setError(null);
+    listActivities()
+      .then((page) => {
+        setItems(page.items ?? []);
+        setNextCursor(page.nextCursor ?? null);
+      })
+      .catch(() => {
+        setError('Aktivitäten konnten nicht geladen werden.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   if (loading) {
     return (
@@ -57,10 +101,7 @@ export default function HomePage() {
         <View className="flex-1 items-center justify-center px-6">
           <Text className="mb-4 text-center text-base text-app-dark-brand">{error}</Text>
           <Pressable
-            onPress={() => {
-              setLoading(true);
-              void loadActivities();
-            }}
+            onPress={onRetryFirstPage}
             className="h-11 min-w-32 items-center justify-center rounded-md bg-app-dark-accent px-5"
           >
             <Text className="font-semibold text-app-dark-text">Erneut versuchen</Text>
@@ -87,20 +128,29 @@ export default function HomePage() {
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
-        onRefresh={() => {
-          void handleRefresh();
-        }}
+        onRefresh={onRefreshList}
         refreshing={refreshing}
+        onEndReachedThreshold={0.4}
+        onEndReached={onReachListEnd}
         contentContainerStyle={{ padding: 16, gap: 12 }}
-        ListHeaderComponent={
-          <Text className="mb-1 text-xs text-app-dark-brand">
-            {refreshing
-              ? 'Aktualisiere Aktivitäten...'
-              : 'Ziehe nach unten, um die Aktivitäten zu aktualisieren.'}
-          </Text>
+        ListFooterComponent={
+          loadingMore ? (
+            <Text className="pb-3 pt-1 text-center text-xs text-app-dark-brand">
+              Weitere Aktivitäten werden geladen...
+            </Text>
+          ) : null
         }
         renderItem={({ item }) => (
           <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
+            {item.thumbnailUrl ? (
+              <Image
+                source={{ uri: item.thumbnailUrl }}
+                resizeMode="cover"
+                className="mb-3 h-44 w-full rounded-md bg-app-dark-card"
+              />
+            ) : (
+              <View className="mb-3 h-44 w-full rounded-md bg-app-dark-card" />
+            )}
             <Text className="text-lg font-bold text-app-dark-text">{item.title}</Text>
             <Text className="mt-2 text-sm text-app-dark-brand">
               Kategorie: {item.category || '—'}
