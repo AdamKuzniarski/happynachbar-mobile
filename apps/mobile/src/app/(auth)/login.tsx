@@ -26,7 +26,12 @@ export default function LoginPage() {
 
       await AsyncStorage.setItem('authToken', response.access_token);
       router.replace('/home');
-    } finally {
+    } 
+    catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please check your credentials and try again.');
+    }
+    finally {
       setIsSubmitting(false);
     }
   }
