@@ -15,7 +15,6 @@ export default function LoginPage() {
 
   async function handleLogin() {
     if (!isValid || isSubmitting) return;
-
     setIsSubmitting(true);
 
     try {
@@ -26,12 +25,10 @@ export default function LoginPage() {
 
       await AsyncStorage.setItem('authToken', response.access_token);
       router.replace('/home');
-    } 
-    catch (error) {
+    } catch (error) {
       console.error('Login error:', error);
       alert('Login failed. Please check your credentials and try again.');
-    }
-    finally {
+    } finally {
       setIsSubmitting(false);
     }
   }

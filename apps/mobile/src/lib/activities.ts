@@ -1,6 +1,17 @@
 import { apiRequest } from '@/lib/api';
 import type { ActivityCategory } from '@/lib/enums';
 
+export type ActivitiyUserSummary = {
+  id?: string;
+  displayName?: string;
+};
+
+export type ActivityImage = {
+  url: string;
+  sortOrder: number;
+  alt?: string;
+};
+
 export type Activity = {
   id: string;
   title: string;
@@ -11,6 +22,13 @@ export type Activity = {
   updatedAt?: string;
   createdBy?: { displayName?: string };
   participantsCount?: number;
+};
+
+export type ActivityDetail = Activity & {
+  description?: string;
+  createdById?: string;
+  createdAt?: string;
+  images?: ActivityImage[];
 };
 
 export type ListActivitiesResponse = {
@@ -24,9 +42,11 @@ type ListActivitiesParams = {
 };
 
 export function listActivities(params: ListActivitiesParams = {}) {
-  const query = params.cursor
-    ? `?cursor=${encodeURIComponent(params.cursor)}`
-    : '';
+  const query = params.cursor ? `?cursor=${encodeURIComponent(params.cursor)}` : '';
 
   return apiRequest<ListActivitiesResponse>(`/activities${query}`);
+}
+
+export function getActivity(id: string) {
+  return apiRequest<ActivityDetail>(`/activities/${id}`);
 }

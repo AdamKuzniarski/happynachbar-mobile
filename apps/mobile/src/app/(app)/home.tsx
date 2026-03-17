@@ -3,6 +3,7 @@ import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { listActivities, type Activity } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
+import { router } from 'expo-router';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -68,6 +69,10 @@ export default function HomePage() {
   function onRetryFirstPage() {
     setLoading(true);
     loadFirstPage().catch(() => {});
+  }
+
+  function openActivityDetails(activityId: string) {
+    router.push(`/activities/${activityId}`);
   }
 
   useEffect(() => {
@@ -141,7 +146,10 @@ export default function HomePage() {
           ) : null
         }
         renderItem={({ item }) => (
-          <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
+          <Pressable
+            onPress={() => openActivityDetails(item.id)}
+            className="rounded-md border border-app-dark-card bg-app-dark-bg p-4"
+          >
             {item.thumbnailUrl ? (
               <Image
                 source={{ uri: item.thumbnailUrl }}
@@ -151,18 +159,23 @@ export default function HomePage() {
             ) : (
               <View className="mb-3 h-44 w-full rounded-md bg-app-dark-card" />
             )}
+
             <Text className="text-lg font-bold text-app-dark-text">{item.title}</Text>
+
             <Text className="mt-2 text-sm text-app-dark-brand">
               Kategorie: {item.category || '—'}
             </Text>
+
             <Text className="mt-1 text-sm text-app-dark-brand">PLZ: {item.plz || '—'}</Text>
+
             <Text className="mt-1 text-sm text-app-dark-brand">
               Start: {formatDate(item.startAt)}
             </Text>
+
             <Text className="mt-1 text-sm text-app-dark-brand">
               Von: {item.createdBy?.displayName?.trim() || 'Neighbor'}
             </Text>
-          </View>
+          </Pressable>
         )}
       />
     </SafeAreaView>
