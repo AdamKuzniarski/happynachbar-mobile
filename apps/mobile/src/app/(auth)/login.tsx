@@ -3,19 +3,37 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { login } from '@/lib/auth';
 import { colors } from '@/theme/colors';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isValid = email.length > 0 && password.length > 0;
 
   async function handleLogin() {
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
 
-    await AsyncStorage.setItem('authToken', 'demo-token');
-    router.replace('/home');
+    setIsSubmitting(true);
+
+    try {
+      const response = await login({
+        email: email.trim(),
+        password,
+      });
+
+      await AsyncStorage.setItem('authToken', response.access_token);
+      router.replace('/home');
+    } 
+    catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please check your credentials and try again.');
+    }
+    finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -55,10 +73,14 @@ export default function LoginPage() {
             />
             <Pressable
               onPress={handleLogin}
-              disabled={!isValid}
-              className={`h-12 items-center justify-center rounded-md ${isValid ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'}`}
+              disabled={!isValid || isSubmitting}
+              className={`h-12 items-center justify-center rounded-md ${
+                isValid && !isSubmitting ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
+              }`}
             >
-              <Text className={'text-base font-semibold text-app-dark-text'}>Anmelden</Text>
+              <Text className={'text-base font-semibold text-app-dark-text'}>
+                {isSubmitting ? 'Anmeldung läuft...' : 'Anmelden'}
+              </Text>
             </Pressable>
           </View>
           <Pressable className={'mt-5'}>
