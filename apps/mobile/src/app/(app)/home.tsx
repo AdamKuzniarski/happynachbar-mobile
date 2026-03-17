@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/format';
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadActivities = useCallback(async () => {
@@ -19,6 +20,20 @@ export default function HomePage() {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setError(null);
+
+    try {
+      const response = await listActivities();
+      setItems(response.items ?? []);
+    } catch {
+      setError('Aktivitäten konnten nicht geladen werden.');
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -72,6 +87,10 @@ export default function HomePage() {
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
+        onRefresh={() => {
+          void handleRefresh();
+        }}
+        refreshing={refreshing}
         contentContainerStyle={{ padding: 16, gap: 12 }}
         renderItem={({ item }) => (
           <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
