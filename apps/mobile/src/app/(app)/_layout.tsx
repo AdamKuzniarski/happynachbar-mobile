@@ -1,8 +1,43 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { router, Tabs } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Platform, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAuthToken } from '@/lib/auth-token';
 
 export default function AppTabsLayout() {
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const token = await getAuthToken();
+
+        if (!token) {
+          router.replace('/landing');
+          return;
+        }
+      } finally {
+        setIsCheckingSession(false);
+      }
+    }
+
+    checkSession().catch(() => {
+      router.replace('/landing');
+      setIsCheckingSession(false);
+    });
+  }, []);
+
+  if (isCheckingSession) {
+    return (
+      <SafeAreaView className="flex-1 bg-app-dark-bg">
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="text-base text-app-dark-brand">Session wird geprüft...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <Tabs
       screenOptions={{

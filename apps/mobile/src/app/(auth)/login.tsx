@@ -1,9 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { login } from '@/lib/auth';
+import { setAuthToken } from '@/lib/auth-token';
 import { colors } from '@/theme/colors';
 
 export default function LoginPage() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
         password,
       });
 
-      await AsyncStorage.setItem('authToken', response.access_token);
+      await setAuthToken(response.access_token);
       router.replace('/home');
     } catch (error) {
       console.error('Login error:', error);
