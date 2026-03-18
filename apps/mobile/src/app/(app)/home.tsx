@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { listActivities, type Activity } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
 import { ActivityCategory } from '@/lib/enums';
-import { CategoryFilterBar } from '@/components/home/CategoryFilterBar';
-import { colors } from '@/theme/colors';
+import { HomeListHeader } from '@/components/home/HomeListHeader';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -94,7 +92,6 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
 
@@ -142,9 +139,12 @@ export default function HomePage() {
         onEndReached={onReachListEnd}
         contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
         ListHeaderComponent={
-          <View className="mb-4">
-            <CategoryFilterBar value={selectedCategory} onChange={onSelectedCategory} />
-          </View>
+          <HomeListHeader
+            searchValue={searchValue}
+            onChangeSearch={setSearchValue}
+            selectedCategory={selectedCategory}
+            onChangeCategory={onSelectedCategory}
+          />
         }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-10">
