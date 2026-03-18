@@ -35,6 +35,7 @@ export type ListActivitiesResponse = {
 type ListActivitiesParams = {
   cursor?: string | null;
   category?: ActivityCategory | null;
+  q?: string;
 };
 
 export function listActivities(params: ListActivitiesParams = {}) {
@@ -46,6 +47,10 @@ export function listActivities(params: ListActivitiesParams = {}) {
 
   if (params.category) {
     searchParams.set('category', params.category);
+  }
+
+  if (params.q) {
+    searchParams.set('q', params.q);
   }
 
   const query = searchParams.toString();
