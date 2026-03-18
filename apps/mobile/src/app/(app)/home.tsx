@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+
 import { listActivities, type Activity } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
-import { router } from 'expo-router';
+import { ActivityCategory } from '@/lib/enums';
+import { CategoryFilterBar } from '@/components/home/CategoryFilterBar';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -12,14 +15,13 @@ export default function HomePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
 
   async function loadFirstPage() {
     setError(null);
 
     try {
-      const page = await listActivities();
-      setItems(page.items ?? []);
-      setNextCursor(page.nextCursor ?? null);
+      await fetchFirstPage(selectedCategory);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -27,14 +29,18 @@ export default function HomePage() {
     }
   }
 
+  async function fetchFirstPage(category: ActivityCategory | null) {
+    const page = await listActivities({ category });
+    setItems(page.items ?? []);
+    setNextCursor(page.nextCursor ?? null);
+  }
+
   async function handleRefresh() {
     setRefreshing(true);
     setError(null);
 
     try {
-      const page = await listActivities();
-      setItems(page.items ?? []);
-      setNextCursor(page.nextCursor ?? null);
+      await fetchFirstPage(selectedCategory);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -48,7 +54,7 @@ export default function HomePage() {
     setLoadingMore(true);
 
     try {
-      const page = await listActivities({ cursor: nextCursor });
+      const page = await listActivities({ cursor: nextCursor, category: selectedCategory });
       setItems((prev) => [...prev, ...(page.items ?? [])]);
       setNextCursor(page.nextCursor ?? null);
     } catch {
@@ -75,20 +81,16 @@ export default function HomePage() {
     router.push(`/activities/${activityId}`);
   }
 
+  function onSelectedCategory(category: ActivityCategory | null) {
+    setSelectedCategory(category);
+  }
+
   useEffect(() => {
+    setLoading(true);
     setError(null);
-    listActivities()
-      .then((page) => {
-        setItems(page.items ?? []);
-        setNextCursor(page.nextCursor ?? null);
-      })
-      .catch(() => {
-        setError('Aktivitäten konnten nicht geladen werden.');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+
+    loadFirstPage().catch(() => {});
+  }, [selectedCategory]);
 
   if (loading) {
     return (
@@ -116,18 +118,6 @@ export default function HomePage() {
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-app-dark-bg">
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center text-base text-app-dark-brand">
-            Es wurden noch keine Aktivitäten gefunden.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView className="flex-1 bg-app-dark-bg">
       <FlatList
@@ -137,7 +127,19 @@ export default function HomePage() {
         refreshing={refreshing}
         onEndReachedThreshold={0.4}
         onEndReached={onReachListEnd}
-        contentContainerStyle={{ padding: 16, gap: 12 }}
+        contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
+        ListHeaderComponent={
+          <View className={'mb-4'}>
+            <CategoryFilterBar value={selectedCategory} onChange={onSelectedCategory} />
+          </View>
+        }
+        ListEmptyComponent={
+          <View className={'flex-1 items-center justify-center py-10'}>
+            <Text className={'text-center text-base text-app-dark-brand'}>
+              Es wurden keine Aktivitäten gefunden.
+            </Text>
+          </View>
+        }
         ListFooterComponent={
           loadingMore ? (
             <Text className="pb-3 pt-1 text-center text-xs text-app-dark-brand">

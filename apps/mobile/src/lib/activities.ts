@@ -1,11 +1,6 @@
 import { apiRequest } from '@/lib/api';
 import type { ActivityCategory } from '@/lib/enums';
 
-export type ActivitiyUserSummary = {
-  id?: string;
-  displayName?: string;
-};
-
 export type ActivityImage = {
   url: string;
   sortOrder: number;
@@ -39,12 +34,22 @@ export type ListActivitiesResponse = {
 
 type ListActivitiesParams = {
   cursor?: string | null;
+  category?: ActivityCategory | null;
 };
 
 export function listActivities(params: ListActivitiesParams = {}) {
-  const query = params.cursor ? `?cursor=${encodeURIComponent(params.cursor)}` : '';
+  const searchParams = new URLSearchParams();
 
-  return apiRequest<ListActivitiesResponse>(`/activities${query}`);
+  if (params.cursor) {
+    searchParams.set('cursor', params.cursor);
+  }
+
+  if (params.category) {
+    searchParams.set('category', params.category);
+  }
+
+  const query = searchParams.toString();
+  return apiRequest<ListActivitiesResponse>(`/activities${query ? `?${query}` : ''}`);
 }
 
 export function getActivity(id: string) {
