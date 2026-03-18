@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { setAuthToken } from '@/lib/auth-token';
 import { colors } from '@/theme/colors';
 
 export default function RegisterPage() {
@@ -31,7 +32,7 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await AsyncStorage.setItem('authToken', 'demo-token');
+      await setAuthToken('demo-token');
 
       if (displayName.trim().length > 0) {
         await AsyncStorage.setItem('displayName', displayName.trim());
