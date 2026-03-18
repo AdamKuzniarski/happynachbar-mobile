@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { listActivities, type Activity } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
 import { ActivityCategory } from '@/lib/enums';
 import { CategoryFilterBar } from '@/components/home/CategoryFilterBar';
+import { colors } from '@/theme/colors';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -16,12 +18,13 @@ export default function HomePage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
+  const [searchValue, setSearchValue] = useState('');
 
-  async function loadFirstPage(category: ActivityCategory | null) {
+  async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
 
     try {
-      const page = await listActivities({ category });
+      const page = await listActivities({ category, q: search });
       setItems(page.items ?? []);
       setNextCursor(page.nextCursor ?? null);
     } catch {
@@ -36,7 +39,7 @@ export default function HomePage() {
     setError(null);
 
     try {
-      const page = await listActivities({ category: selectedCategory });
+      const page = await listActivities({ category: selectedCategory, q: searchValue });
       setItems(page.items ?? []);
       setNextCursor(page.nextCursor ?? null);
     } catch {
@@ -55,6 +58,7 @@ export default function HomePage() {
       const page = await listActivities({
         cursor: nextCursor,
         category: selectedCategory,
+        q: searchValue,
       });
 
       setItems((prev) => [...prev, ...(page.items ?? [])]);
@@ -78,7 +82,7 @@ export default function HomePage() {
     setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
-    loadFirstPage(selectedCategory).catch(() => {});
+    loadFirstPage(selectedCategory, searchValue).catch(() => {});
   }
 
   function openActivityDetails(activityId: string) {
@@ -93,8 +97,13 @@ export default function HomePage() {
     setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
-    loadFirstPage(selectedCategory).catch(() => {});
-  }, [selectedCategory]);
+
+    const timeout = setTimeout(() => {
+      loadFirstPage(selectedCategory, searchValue).catch(() => {});
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [selectedCategory, searchValue]);
 
   if (loading) {
     return (
