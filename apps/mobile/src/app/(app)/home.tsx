@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -16,43 +16,32 @@ export default function HomePage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
-  const requestTokenRef = useRef(0);
 
-  const fetchFirstPage = useCallback(async (category: ActivityCategory | null, requestToken: number) => {
-    const page = await listActivities({ category });
-
-    if (requestToken !== requestTokenRef.current) return;
-    setItems(page.items ?? []);
-    setNextCursor(page.nextCursor ?? null);
-  }, []);
-
-  const loadFirstPage = useCallback(async (category: ActivityCategory | null) => {
-    const requestToken = ++requestTokenRef.current;
+  async function loadFirstPage(category: ActivityCategory | null) {
     setError(null);
 
     try {
-      await fetchFirstPage(category, requestToken);
+      const page = await listActivities({ category });
+      setItems(page.items ?? []);
+      setNextCursor(page.nextCursor ?? null);
     } catch {
-      if (requestToken !== requestTokenRef.current) return;
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
-      if (requestToken !== requestTokenRef.current) return;
       setLoading(false);
     }
-  }, [fetchFirstPage]);
+  }
 
   async function handleRefresh() {
-    const requestToken = ++requestTokenRef.current;
     setRefreshing(true);
     setError(null);
 
     try {
-      await fetchFirstPage(selectedCategory, requestToken);
+      const page = await listActivities({ category: selectedCategory });
+      setItems(page.items ?? []);
+      setNextCursor(page.nextCursor ?? null);
     } catch {
-      if (requestToken !== requestTokenRef.current) return;
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
-      if (requestToken !== requestTokenRef.current) return;
       setRefreshing(false);
     }
   }
@@ -60,22 +49,19 @@ export default function HomePage() {
   async function handleLoadMore() {
     if (!nextCursor || loading || refreshing || loadingMore) return;
 
-    const requestToken = requestTokenRef.current;
-    const cursor = nextCursor;
-    const category = selectedCategory;
-
     setLoadingMore(true);
 
     try {
-      const page = await listActivities({ cursor, category });
-      if (requestToken !== requestTokenRef.current) return;
+      const page = await listActivities({
+        cursor: nextCursor,
+        category: selectedCategory,
+      });
+
       setItems((prev) => [...prev, ...(page.items ?? [])]);
       setNextCursor(page.nextCursor ?? null);
     } catch {
-      if (requestToken !== requestTokenRef.current) return;
       setError('Weitere Aktivitäten konnten nicht geladen werden.');
     } finally {
-      if (requestToken !== requestTokenRef.current) return;
       setLoadingMore(false);
     }
   }
@@ -107,10 +93,8 @@ export default function HomePage() {
     setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
-    setError(null);
-
     loadFirstPage(selectedCategory).catch(() => {});
-  }, [selectedCategory, loadFirstPage]);
+  }, [selectedCategory]);
 
   if (loading) {
     return (
@@ -149,13 +133,13 @@ export default function HomePage() {
         onEndReached={onReachListEnd}
         contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
         ListHeaderComponent={
-          <View className={'mb-4'}>
+          <View className="mb-4">
             <CategoryFilterBar value={selectedCategory} onChange={onSelectedCategory} />
           </View>
         }
         ListEmptyComponent={
-          <View className={'flex-1 items-center justify-center py-10'}>
-            <Text className={'text-center text-base text-app-dark-brand'}>
+          <View className="flex-1 items-center justify-center py-10">
+            <Text className="text-center text-base text-app-dark-brand">
               Es wurden keine Aktivitäten gefunden.
             </Text>
           </View>
