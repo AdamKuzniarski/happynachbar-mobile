@@ -92,14 +92,33 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+
+    setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
 
-    const timeout = setTimeout(() => {
-      loadFirstPage(selectedCategory, searchValue).catch(() => {});
+    const timeout = setTimeout(async () => {
+      try {
+        const page = await listActivities({ category: selectedCategory, q: searchValue });
+        if (cancelled) return;
+        setError(null);
+        setItems(page.items ?? []);
+        setNextCursor(page.nextCursor ?? null);
+      } catch {
+        if (cancelled) return;
+        setError('Aktivitäten konnten nicht geladen werden.');
+      } finally {
+        if (cancelled) return;
+        setLoading(false);
+        setRefreshing(false);
+      }
     }, 300);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [selectedCategory, searchValue]);
 
   if (loading) {

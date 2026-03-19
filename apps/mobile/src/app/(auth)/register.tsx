@@ -1,9 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { setAuthToken } from '@/lib/auth-token';
+import { ApiError } from '@/lib/api';
+import { signup } from '@/lib/auth';
 import { colors } from '@/theme/colors';
 
 export default function RegisterPage() {
@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isPasswordValid = password.length >= 8;
@@ -26,19 +27,26 @@ export default function RegisterPage() {
 
   async function handleCreateAccount() {
     setSubmitted(true);
+    setSubmitError(null);
 
     if (!isValid || isSubmitting) return;
 
     setIsSubmitting(true);
 
     try {
-      await setAuthToken('demo-token');
+      await signup({
+        email: email.trim(),
+        password,
+        displayName: displayName.trim().length > 0 ? displayName.trim() : undefined,
+      });
 
-      if (displayName.trim().length > 0) {
-        await AsyncStorage.setItem('displayName', displayName.trim());
+      router.replace('/login');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setSubmitError(error.message);
+      } else {
+        setSubmitError('Registrierung fehlgeschlagen. Bitte erneut versuchen.');
       }
-
-      router.replace('/home');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,6 +101,7 @@ export default function RegisterPage() {
             {passwordError ? (
               <Text className="-mt-2 text-sm text-red-400">{passwordError}</Text>
             ) : null}
+            {submitError ? <Text className="-mt-2 text-sm text-red-400">{submitError}</Text> : null}
 
             <Pressable
               onPress={handleCreateAccount}
