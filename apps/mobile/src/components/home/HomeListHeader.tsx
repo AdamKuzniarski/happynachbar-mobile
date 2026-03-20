@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Pressable, TextInput, View } from 'react-native';
 
 import { ActivityCategory } from '@/lib/enums';
 import { CategoryFilterBar } from '@/components/home/CategoryFilterBar';
@@ -9,6 +10,7 @@ type Props = {
   onChangeSearch: (value: string) => void;
   selectedCategory: ActivityCategory | null;
   onChangeCategory: (value: ActivityCategory | null) => void;
+  categoryVisible?: boolean;
 };
 
 export function HomeListHeader({
@@ -16,7 +18,23 @@ export function HomeListHeader({
   onChangeSearch,
   selectedCategory,
   onChangeCategory,
+  categoryVisible = true,
 }: Props) {
+  const [animation] = useState(() => new Animated.Value(categoryVisible ? 1 : 0));
+
+  useEffect(() => {
+    Animated.timing(animation, {
+      toValue: categoryVisible ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [animation, categoryVisible]);
+
+  const maxHeight = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 64],
+  });
+
   return (
     <View className="mb-4 gap-3">
       <View className="flex-row items-center rounded-full border border-app-dark-card bg-app-dark-bg px-4 py-3">
@@ -40,7 +58,15 @@ export function HomeListHeader({
         ) : null}
       </View>
 
-      <CategoryFilterBar value={selectedCategory} onChange={onChangeCategory} />
+      <Animated.View
+        style={{
+          maxHeight,
+          opacity: animation,
+          overflow: 'hidden',
+        }}
+      >
+        <CategoryFilterBar value={selectedCategory} onChange={onChangeCategory} />
+      </Animated.View>
     </View>
   );
 }

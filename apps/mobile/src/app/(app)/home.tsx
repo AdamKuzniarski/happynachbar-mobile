@@ -17,6 +17,8 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
   const [searchValue, setSearchValue] = useState('');
+  const [isCategoryVisible, setIsCategoryVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
@@ -91,10 +93,28 @@ export default function HomePage() {
     setSelectedCategory(category);
   }
 
+  function onListScroll(event: { nativeEvent: { contentOffset: { y: number } } }) {
+    const currentY = Math.max(0, event.nativeEvent.contentOffset.y);
+
+    if (currentY <= 4) {
+      setIsCategoryVisible(true);
+      setLastScrollY(currentY);
+      return;
+    }
+
+    if (currentY > lastScrollY + 2) {
+      setIsCategoryVisible(false);
+    } else if (currentY < lastScrollY - 2) {
+      setIsCategoryVisible(true);
+    }
+
+    setLastScrollY(currentY);
+  }
+
   useEffect(() => {
     let cancelled = false;
 
-    setLoading(true);
+    // setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
 
@@ -149,6 +169,16 @@ export default function HomePage() {
 
   return (
     <SafeAreaView className="flex-1 bg-app-dark-bg">
+      <View className="px-4 pt-4">
+        <HomeListHeader
+          searchValue={searchValue}
+          onChangeSearch={setSearchValue}
+          selectedCategory={selectedCategory}
+          onChangeCategory={onSelectedCategory}
+          categoryVisible={isCategoryVisible}
+        />
+      </View>
+
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -156,15 +186,9 @@ export default function HomePage() {
         refreshing={refreshing}
         onEndReachedThreshold={0.4}
         onEndReached={onReachListEnd}
-        contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
-        ListHeaderComponent={
-          <HomeListHeader
-            searchValue={searchValue}
-            onChangeSearch={setSearchValue}
-            selectedCategory={selectedCategory}
-            onChangeCategory={onSelectedCategory}
-          />
-        }
+        onScroll={onListScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12, flexGrow: 1 }}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-10">
             <Text className="text-center text-base text-app-dark-brand">
