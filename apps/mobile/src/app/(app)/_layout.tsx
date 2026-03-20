@@ -108,6 +108,12 @@ export default function AppTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="profile/edit"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
