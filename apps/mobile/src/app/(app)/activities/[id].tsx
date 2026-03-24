@@ -81,7 +81,7 @@ export default function ActivityDetailPage() {
   }, [activityId, reloadKey]);
 
   const imageUrl = activity?.images?.[0]?.url ?? activity?.thumbnailUrl ?? null;
-  const creatorName = activity?.createdBy?.displayName?.trim() || 'Neighbor';
+  const creatorName = activity?.createdBy?.displayName?.trim() || 'Nachbar';
   const isOwner = !!activity && !!viewerUserId && activity.createdById === viewerUserId;
 
   async function handleUpdate(payload: ActivityWritePayload) {
@@ -95,7 +95,7 @@ export default function ActivityDetailPage() {
       setActivity(updated);
       setIsEditing(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Activity could not be updated.';
+      const message = err instanceof Error ? err.message : 'Aktivität konnte nicht gespeichert werden.';
       setError(message);
     } finally {
       setIsSaving(false);
@@ -105,10 +105,10 @@ export default function ActivityDetailPage() {
   function handleArchive() {
     if (!activity || isArchiving) return;
 
-    Alert.alert('Archive activity?', 'This will hide the activity from the feed.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('Aktivität löschen?', 'Die Aktivität wird aus dem Feed entfernt.', [
+      { text: 'Abbrechen', style: 'cancel' },
       {
-        text: 'Archive',
+        text: 'Löschen',
         style: 'destructive',
         onPress: () => {
           setIsArchiving(true);
@@ -120,7 +120,7 @@ export default function ActivityDetailPage() {
             })
             .catch((err: unknown) => {
               const message =
-                err instanceof Error ? err.message : 'Activity could not be archived.';
+                err instanceof Error ? err.message : 'Aktivität konnte nicht gelöscht werden.';
               setError(message);
             })
             .finally(() => {
@@ -217,7 +217,7 @@ export default function ActivityDetailPage() {
                 className="h-11 flex-1 items-center justify-center rounded-md bg-app-dark-accent px-4"
               >
                 <Text className="font-semibold text-app-dark-text">
-                  {isEditing ? 'Close edit' : 'Edit'}
+                  {isEditing ? 'Bearbeiten schließen' : 'Bearbeiten'}
                 </Text>
               </Pressable>
 
@@ -226,7 +226,7 @@ export default function ActivityDetailPage() {
                 className="h-11 flex-1 items-center justify-center rounded-md border border-app-dark-card px-4"
               >
                 <Text className="font-semibold text-app-dark-text">
-                  {isArchiving ? 'Archiving...' : 'Archive'}
+                  {isArchiving ? 'Wird gelöscht...' : 'Löschen'}
                 </Text>
               </Pressable>
             </View>
@@ -234,7 +234,7 @@ export default function ActivityDetailPage() {
 
           {isOwner && isEditing ? (
             <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
-              <Text className="mb-4 text-lg font-bold text-app-dark-text">Edit activity</Text>
+              <Text className="mb-4 text-lg font-bold text-app-dark-text">Aktivität bearbeiten</Text>
               <ActivityForm
                 initialValues={{
                   title: activity.title,
@@ -244,7 +244,7 @@ export default function ActivityDetailPage() {
                   startAt: activity.startAt,
                   imageUrls: activity.images?.map((image) => image.url) ?? [],
                 }}
-                submitLabel="Save changes"
+                submitLabel="Änderungen speichern"
                 isSubmitting={isSaving}
                 onSubmit={handleUpdate}
                 onCancel={() => setIsEditing(false)}
