@@ -32,6 +32,15 @@ export type ListActivitiesResponse = {
   nextCursor: string | null;
 };
 
+export type ActivityWritePayload = {
+  title: string;
+  description?: string;
+  category: ActivityCategory;
+  plz: string;
+  startAt?: string;
+  imageUrls?: string[];
+};
+
 type ListActivitiesParams = {
   cursor?: string | null;
   category?: ActivityCategory | null;
@@ -59,4 +68,24 @@ export function listActivities(params: ListActivitiesParams = {}) {
 
 export function getActivity(id: string) {
   return apiRequest<ActivityDetail>(`/activities/${id}`);
+}
+
+export function createActivity(payload: ActivityWritePayload) {
+  return apiRequest<ActivityDetail>(`/activities`, {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function updateActivity(id: string, payload: Partial<ActivityWritePayload>) {
+  return apiRequest<ActivityDetail>(`/activities/${id}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+}
+
+export function deleteActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}`, {
+    method: 'DELETE',
+  });
 }

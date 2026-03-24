@@ -9,6 +9,10 @@ export type LoginResponse = {
   access_token: string;
 };
 
+export type AuthMeResponse = {
+  userId: string;
+  email: string;
+  role?: string;
 export type SignupPayload = {
   email: string;
   password: string;
@@ -29,6 +33,8 @@ export function login(payload: LoginPayload) {
   });
 }
 
+export function getAuthMe() {
+  return apiRequest<AuthMeResponse>('/auth/me');
 export function signup(payload: SignupPayload) {
   return apiRequest<SignupResponse>('/auth/signup', {
     method: 'POST',
