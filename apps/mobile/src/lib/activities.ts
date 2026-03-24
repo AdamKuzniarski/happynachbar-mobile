@@ -71,7 +71,7 @@ export function getActivity(id: string) {
 }
 
 export function createActivity(payload: ActivityWritePayload) {
-  return apiRequest<ActivityDetail>(` /activities`, {
+  return apiRequest<ActivityDetail>(`/activities`, {
     method: 'POST',
     body: payload,
   });
@@ -85,7 +85,7 @@ export function updateActivity(id: string, payload: Partial<ActivityWritePayload
 }
 
 export function deleteActivity(id: string) {
-  return apiRequest<{ oK: true }>(`/activities/${id}`, {
+  return apiRequest<{ ok: true }>(`/activities/${id}`, {
     method: 'DELETE',
   });
 }
