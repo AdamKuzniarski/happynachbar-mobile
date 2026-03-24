@@ -1,6 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActivityForm } from '@/components/activities/ActivityForm';
@@ -30,6 +40,8 @@ export default function ActivityDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     async function loadViewer() {
@@ -80,9 +92,29 @@ export default function ActivityDetailPage() {
     run().catch(() => {});
   }, [activityId, reloadKey]);
 
-  const imageUrl = activity?.images?.[0]?.url ?? activity?.thumbnailUrl ?? null;
+  const imageUrls = activity?.images?.map((image) => image.url).filter(Boolean) ?? [];
+  const galleryImages =
+    imageUrls.length > 0
+      ? imageUrls
+      : activity?.thumbnailUrl
+        ? [activity.thumbnailUrl]
+        : [];
+  const galleryImageWidth = Math.max(width - 32, 280);
   const creatorName = activity?.createdBy?.displayName?.trim() || 'Nachbar';
   const isOwner = !!activity && !!viewerUserId && activity.createdById === viewerUserId;
+
+  function handleGalleryScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (!galleryImages.length) return;
+
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const nextIndex = Math.round(offsetX / galleryImageWidth);
+    const clampedIndex = Math.max(0, Math.min(nextIndex, galleryImages.length - 1));
+    setCurrentImageIndex(clampedIndex);
+  }
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [activity?.id, galleryImages.length]);
 
   async function handleUpdate(payload: ActivityWritePayload) {
     if (!activity) return;
@@ -200,12 +232,41 @@ export default function ActivityDetailPage() {
 
           {error ? <Text className="text-sm text-red-300">{error}</Text> : null}
 
-          {imageUrl ? (
-            <Image
-              source={{ uri: imageUrl }}
-              resizeMode={'cover'}
-              className={'h-64 w-full rounded-md bg-app-dark-card'}
-            />
+          {galleryImages.length > 0 ? (
+            <View className="gap-2">
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={handleGalleryScroll}
+              >
+                {galleryImages.map((url, index) => (
+                  <View
+                    key={`${url}-${index}`}
+                    style={{ width: galleryImageWidth }}
+                  >
+                    <Image
+                      source={{ uri: url }}
+                      resizeMode={'cover'}
+                      className={'h-64 w-full rounded-md bg-app-dark-card'}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+
+              {galleryImages.length > 1 ? (
+                <View className="flex-row items-center justify-center gap-2">
+                  {galleryImages.map((_, index) => (
+                    <View
+                      key={`dot-${index}`}
+                      className={`h-2 w-2 rounded-full ${
+                        index === currentImageIndex ? 'bg-app-dark-accent' : 'bg-app-dark-card'
+                      }`}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </View>
           ) : (
             <View className={'h-64 w-full rounded-md bg-app-dark-card'} />
           )}

@@ -231,17 +231,20 @@ export function ActivityForm({
   onSubmit,
   onCancel,
 }: Props) {
-  const [title, setTitle] = useState(initialValues?.title ?? '');
-  const [description, setDescription] = useState(initialValues?.description ?? '');
-  const [plz, setPlz] = useState(initialValues?.plz ?? '');
-  const [category, setCategory] = useState<ActivityCategory>(
-    initialValues?.category ?? ActivityCategory.OUTDOOR,
-  );
-  const [startDateInput, setStartDateInput] = useState(formatDateInput(initialValues?.startAt));
-  const [startTimeInput, setStartTimeInput] = useState(formatTimeInput(initialValues?.startAt));
-  const [imageUrls, setImageUrls] = useState<string[]>(
-    initialValues?.imageUrls ?? [],
-  );
+  const initialTitle = initialValues?.title ?? '';
+  const initialDescription = initialValues?.description ?? '';
+  const initialPlz = initialValues?.plz ?? '';
+  const initialCategory = initialValues?.category ?? ActivityCategory.OUTDOOR;
+  const initialStartAt = initialValues?.startAt;
+  const initialImageUrlsSignature = (initialValues?.imageUrls ?? []).join('\n');
+
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [plz, setPlz] = useState(initialPlz);
+  const [category, setCategory] = useState<ActivityCategory>(initialCategory);
+  const [startDateInput, setStartDateInput] = useState(formatDateInput(initialStartAt));
+  const [startTimeInput, setStartTimeInput] = useState(formatTimeInput(initialStartAt));
+  const [imageUrls, setImageUrls] = useState<string[]>(initialValues?.imageUrls ?? []);
   const [urlInput, setUrlInput] = useState('');
   const [urlStatus, setUrlStatus] = useState<'added' | 'duplicate' | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -249,18 +252,25 @@ export function ActivityForm({
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
 
   useEffect(() => {
-    setTitle(initialValues?.title ?? '');
-    setDescription(initialValues?.description ?? '');
-    setPlz(initialValues?.plz ?? '');
-    setCategory(initialValues?.category ?? ActivityCategory.OUTDOOR);
-    setStartDateInput(formatDateInput(initialValues?.startAt));
-    setStartTimeInput(formatTimeInput(initialValues?.startAt));
-    setImageUrls(initialValues?.imageUrls ?? []);
+    setTitle(initialTitle);
+    setDescription(initialDescription);
+    setPlz(initialPlz);
+    setCategory(initialCategory);
+    setStartDateInput(formatDateInput(initialStartAt));
+    setStartTimeInput(formatTimeInput(initialStartAt));
+    setImageUrls(initialImageUrlsSignature ? initialImageUrlsSignature.split('\n') : []);
     setFailedPreviewUrls({});
-  }, [initialValues]);
+  }, [
+    initialTitle,
+    initialDescription,
+    initialPlz,
+    initialCategory,
+    initialStartAt,
+    initialImageUrlsSignature,
+  ]);
 
   useEffect(() => {
-    const initialUrls = initialValues?.imageUrls ?? [];
+    const initialUrls = initialImageUrlsSignature ? initialImageUrlsSignature.split('\n') : [];
     if (!initialUrls.length) return;
 
     let cancelled = false;
@@ -281,7 +291,7 @@ export function ActivityForm({
     return () => {
       cancelled = true;
     };
-  }, [initialValues]);
+  }, [initialImageUrlsSignature]);
 
   useEffect(() => {
     if (!urlStatus) return;
