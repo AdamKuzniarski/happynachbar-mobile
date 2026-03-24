@@ -125,6 +125,10 @@ function getAddImageUrlResult(rawInput: string, currentUrls: string[]): AddImage
   return { status: 'added', nextUrls: [...currentUrls, normalized] };
 }
 
+function imageUrlsFromSignature(signature: string) {
+  return signature ? signature.split('\n') : [];
+}
+
 function toValidDate(value?: string) {
   if (!value) return null;
   const date = new Date(value);
@@ -237,6 +241,7 @@ export function ActivityForm({
   const initialCategory = initialValues?.category ?? ActivityCategory.OUTDOOR;
   const initialStartAt = initialValues?.startAt;
   const initialImageUrlsSignature = (initialValues?.imageUrls ?? []).join('\n');
+  const initialImageUrls = imageUrlsFromSignature(initialImageUrlsSignature);
 
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
@@ -244,7 +249,7 @@ export function ActivityForm({
   const [category, setCategory] = useState<ActivityCategory>(initialCategory);
   const [startDateInput, setStartDateInput] = useState(formatDateInput(initialStartAt));
   const [startTimeInput, setStartTimeInput] = useState(formatTimeInput(initialStartAt));
-  const [imageUrls, setImageUrls] = useState<string[]>(initialValues?.imageUrls ?? []);
+  const [imageUrls, setImageUrls] = useState<string[]>(initialImageUrls);
   const [urlInput, setUrlInput] = useState('');
   const [urlStatus, setUrlStatus] = useState<'added' | 'duplicate' | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -258,7 +263,7 @@ export function ActivityForm({
     setCategory(initialCategory);
     setStartDateInput(formatDateInput(initialStartAt));
     setStartTimeInput(formatTimeInput(initialStartAt));
-    setImageUrls(initialImageUrlsSignature ? initialImageUrlsSignature.split('\n') : []);
+    setImageUrls(imageUrlsFromSignature(initialImageUrlsSignature));
     setFailedPreviewUrls({});
   }, [
     initialTitle,
@@ -270,7 +275,7 @@ export function ActivityForm({
   ]);
 
   useEffect(() => {
-    const initialUrls = initialImageUrlsSignature ? initialImageUrlsSignature.split('\n') : [];
+    const initialUrls = imageUrlsFromSignature(initialImageUrlsSignature);
     if (!initialUrls.length) return;
 
     let cancelled = false;
@@ -302,6 +307,7 @@ export function ActivityForm({
   const hasValidTitle = title.trim().length >= 3;
   const hasValidPlz = /^\d{5}$/.test(plz);
   const isValid = hasValidTitle && hasValidPlz;
+  const canSubmit = isValid && !isSubmitting && !isResolvingUrl;
 
   function applyAddImageUrlResult(result: AddImageUrlResult) {
     if (result.status === 'invalid') {
@@ -346,8 +352,22 @@ export function ActivityForm({
     }
   }
 
+  function handleAddUrl() {
+    setFormError(null);
+    resolveAndApplyUrlInput(imageUrls).catch(() => {});
+  }
+
+  function handleRemoveImage(url: string, idx: number) {
+    setImageUrls((prev) => prev.filter((_, i) => i !== idx));
+    setFailedPreviewUrls((prev) => {
+      const next = { ...prev };
+      delete next[url];
+      return next;
+    });
+  }
+
   async function handleSubmit() {
-    if (!isValid || isSubmitting || isResolvingUrl) return;
+    if (!canSubmit) return;
     setFormError(null);
 
     const urlResult = await resolveAndApplyUrlInput(imageUrls);
@@ -449,17 +469,11 @@ export function ActivityForm({
             keyboardType="url"
             autoCapitalize="none"
             autoCorrect={false}
-            onSubmitEditing={() => {
-              setFormError(null);
-              resolveAndApplyUrlInput(imageUrls).catch(() => {});
-            }}
+            onSubmitEditing={handleAddUrl}
             className="flex-1 rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
           />
           <Pressable
-            onPress={() => {
-              setFormError(null);
-              resolveAndApplyUrlInput(imageUrls).catch(() => {});
-            }}
+            onPress={handleAddUrl}
             disabled={isResolvingUrl}
             className="h-11 items-center justify-center rounded-md border border-app-dark-card px-3"
           >
@@ -493,9 +507,7 @@ export function ActivityForm({
                     source={{ uri: url }}
                     resizeMode="cover"
                     className="h-28 w-full bg-app-dark-card"
-                    onError={() => {
-                      setFailedPreviewUrls((prev) => ({ ...prev, [url]: true }));
-                    }}
+                    onError={() => setFailedPreviewUrls((prev) => ({ ...prev, [url]: true }))}
                   />
                 )}
                 <View className="flex-row items-center gap-2 px-3 py-2">
@@ -503,14 +515,7 @@ export function ActivityForm({
                     {url}
                   </Text>
                   <Pressable
-                    onPress={() => {
-                      setImageUrls((prev) => prev.filter((_, i) => i !== idx));
-                      setFailedPreviewUrls((prev) => {
-                        const next = { ...prev };
-                        delete next[url];
-                        return next;
-                      });
-                    }}
+                    onPress={() => handleRemoveImage(url, idx)}
                     className="rounded-md border border-app-dark-card px-2 py-1"
                   >
                     <Text className="text-xs font-semibold text-app-dark-text">Entfernen</Text>
@@ -527,11 +532,9 @@ export function ActivityForm({
       <View className="gap-3 pt-2">
         <Pressable
           onPress={() => handleSubmit().catch(() => {})}
-          disabled={!isValid || isSubmitting || isResolvingUrl}
+          disabled={!canSubmit}
           className={`h-12 items-center justify-center rounded-md ${
-            isValid && !isSubmitting && !isResolvingUrl
-              ? 'bg-app-dark-accent'
-              : 'bg-app-dark-card opacity-70'
+            canSubmit ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
           }`}
         >
           <Text className="text-base font-semibold text-app-dark-text">
