@@ -241,6 +241,8 @@ export default function ActivityDetailPage() {
                   description: activity.description,
                   plz: activity.plz,
                   category: activity.category as ActivityWritePayload['category'],
+                  startAt: activity.startAt,
+                  imageUrls: activity.images?.map((image) => image.url) ?? [],
                 }}
                 submitLabel="Save changes"
                 isSubmitting={isSaving}
