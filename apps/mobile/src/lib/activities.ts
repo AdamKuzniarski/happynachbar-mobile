@@ -38,7 +38,7 @@ export type ActivityWritePayload = {
   category: ActivityCategory;
   plz: string;
   startAt?: string;
-  imageUrls: string[];
+  imageUrls?: string[];
 };
 
 type ListActivitiesParams = {
