@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { listActivities, type Activity } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
@@ -17,6 +18,9 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | null>(null);
   const [searchValue, setSearchValue] = useState('');
+  const loadingRef = useRef(loading);
+  const selectedCategoryRef = useRef(selectedCategory);
+  const searchValueRef = useRef(searchValue);
 
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
@@ -32,7 +36,7 @@ export default function HomePage() {
     }
   }
 
-  async function handleRefresh() {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setError(null);
 
@@ -45,7 +49,7 @@ export default function HomePage() {
     } finally {
       setRefreshing(false);
     }
-  }
+  }, [searchValue, selectedCategory]);
 
   async function handleLoadMore() {
     if (!nextCursor || loading || refreshing || loadingMore) return;
@@ -90,6 +94,42 @@ export default function HomePage() {
   function onSelectedCategory(category: ActivityCategory | null) {
     setSelectedCategory(category);
   }
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    selectedCategoryRef.current = selectedCategory;
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    searchValueRef.current = searchValue;
+  }, [searchValue]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loadingRef.current) return;
+
+      setRefreshing(true);
+      setError(null);
+
+      listActivities({
+        category: selectedCategoryRef.current,
+        q: searchValueRef.current,
+      })
+        .then((page) => {
+          setItems(page.items ?? []);
+          setNextCursor(page.nextCursor ?? null);
+        })
+        .catch(() => {
+          setError('Aktivitäten konnten nicht geladen werden.');
+        })
+        .finally(() => {
+          setRefreshing(false);
+        });
+    }, []),
+  );
 
   useEffect(() => {
     setLoadingMore(false);
