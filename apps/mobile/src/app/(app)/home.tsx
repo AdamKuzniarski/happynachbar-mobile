@@ -21,6 +21,8 @@ export default function HomePage() {
   const loadingRef = useRef(loading);
   const selectedCategoryRef = useRef(selectedCategory);
   const searchValueRef = useRef(searchValue);
+  const [isCategoryVisible, setIsCategoryVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
@@ -95,6 +97,24 @@ export default function HomePage() {
     setSelectedCategory(category);
   }
 
+  function onListScroll(event: { nativeEvent: { contentOffset: { y: number } } }) {
+    const currentY = Math.max(0, event.nativeEvent.contentOffset.y);
+
+    if (currentY <= 4) {
+      setIsCategoryVisible(true);
+      setLastScrollY(currentY);
+      return;
+    }
+
+    if (currentY > lastScrollY + 2) {
+      setIsCategoryVisible(false);
+    } else if (currentY < lastScrollY - 2) {
+      setIsCategoryVisible(true);
+    }
+
+    setLastScrollY(currentY);
+  }
+
   useEffect(() => {
     loadingRef.current = loading;
   }, [loading]);
@@ -132,14 +152,33 @@ export default function HomePage() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+
+    // setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
 
-    const timeout = setTimeout(() => {
-      loadFirstPage(selectedCategory, searchValue).catch(() => {});
+    const timeout = setTimeout(async () => {
+      try {
+        const page = await listActivities({ category: selectedCategory, q: searchValue });
+        if (cancelled) return;
+        setError(null);
+        setItems(page.items ?? []);
+        setNextCursor(page.nextCursor ?? null);
+      } catch {
+        if (cancelled) return;
+        setError('Aktivitäten konnten nicht geladen werden.');
+      } finally {
+        if (cancelled) return;
+        setLoading(false);
+        setRefreshing(false);
+      }
     }, 300);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [selectedCategory, searchValue]);
 
   if (loading) {
@@ -170,6 +209,16 @@ export default function HomePage() {
 
   return (
     <SafeAreaView className="flex-1 bg-app-dark-bg">
+      <View className="px-4 pt-4">
+        <HomeListHeader
+          searchValue={searchValue}
+          onChangeSearch={setSearchValue}
+          selectedCategory={selectedCategory}
+          onChangeCategory={onSelectedCategory}
+          categoryVisible={isCategoryVisible}
+        />
+      </View>
+
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -177,15 +226,9 @@ export default function HomePage() {
         refreshing={refreshing}
         onEndReachedThreshold={0.4}
         onEndReached={onReachListEnd}
-        contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
-        ListHeaderComponent={
-          <HomeListHeader
-            searchValue={searchValue}
-            onChangeSearch={setSearchValue}
-            selectedCategory={selectedCategory}
-            onChangeCategory={onSelectedCategory}
-          />
-        }
+        onScroll={onListScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12, flexGrow: 1 }}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-10">
             <Text className="text-center text-base text-app-dark-brand">

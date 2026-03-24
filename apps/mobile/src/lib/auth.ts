@@ -13,6 +13,17 @@ export type AuthMeResponse = {
   userId: string;
   email: string;
   role?: string;
+export type SignupPayload = {
+  email: string;
+  password: string;
+  displayName?: string;
+};
+
+export type SignupResponse = {
+  id: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function login(payload: LoginPayload) {
@@ -24,4 +35,9 @@ export function login(payload: LoginPayload) {
 
 export function getAuthMe() {
   return apiRequest<AuthMeResponse>('/auth/me');
+export function signup(payload: SignupPayload) {
+  return apiRequest<SignupResponse>('/auth/signup', {
+    method: 'POST',
+    body: payload,
+  });
 }

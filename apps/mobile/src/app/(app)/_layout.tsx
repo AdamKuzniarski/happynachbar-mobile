@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAuthToken } from '@/lib/auth-token';
 
 export default function AppTabsLayout() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     async function checkSession() {
@@ -47,9 +48,9 @@ export default function AppTabsLayout() {
         tabBarStyle: {
           backgroundColor: '#000000',
           borderTopColor: '#1f1f1f',
-          height: Platform.OS === 'ios' ? 88 : 72,
+          height: Platform.OS === 'ios' ? 72 + insets.bottom : 62 + Math.max(insets.bottom, 10),
           paddingTop: Platform.OS === 'ios' ? 8 : 6,
-          paddingBottom: Platform.OS === 'ios' ? 16 : 10,
+          paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 12) : Math.max(insets.bottom, 10),
         },
         tabBarLabelStyle: {
           fontSize: Platform.OS === 'ios' ? 12 : 11,
@@ -104,6 +105,12 @@ export default function AppTabsLayout() {
       />
       <Tabs.Screen
         name="activities/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/edit"
         options={{
           href: null,
         }}
