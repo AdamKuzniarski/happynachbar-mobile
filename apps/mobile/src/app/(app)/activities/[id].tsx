@@ -1,9 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ActivityForm } from '@/components/activities/ActivityForm';
+import { getAuthMe } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
-import { getActivity, type ActivityDetail } from '@/lib/activities';
+import {
+  deleteActivity as archiveActivity,
+  getActivity,
+  updateActivity,
+  type ActivityDetail,
+  type ActivityWritePayload,
+} from '@/lib/activities';
 import { formatDate } from '@/lib/format';
 
 export default function ActivityDetailPage() {
@@ -13,10 +22,27 @@ export default function ActivityDetailPage() {
     typeof rawId === 'string' ? rawId : Array.isArray(rawId) && rawId.length > 0 ? rawId[0] : null;
 
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
+  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    async function loadViewer() {
+      try {
+        const me = await getAuthMe();
+        setViewerUserId(me.userId);
+      } catch {
+        setViewerUserId(null);
+      }
+    }
+
+    loadViewer().catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function run() {
@@ -31,6 +57,7 @@ export default function ActivityDetailPage() {
       setLoading(true);
       setError(null);
       setNotFound(false);
+      setIsEditing(false);
 
       try {
         const data = await getActivity(activityId);
@@ -55,6 +82,54 @@ export default function ActivityDetailPage() {
 
   const imageUrl = activity?.images?.[0]?.url ?? activity?.thumbnailUrl ?? null;
   const creatorName = activity?.createdBy?.displayName?.trim() || 'Neighbor';
+  const isOwner = !!activity && !!viewerUserId && activity.createdById === viewerUserId;
+
+  async function handleUpdate(payload: ActivityWritePayload) {
+    if (!activity) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const updated = await updateActivity(activity.id, payload);
+      setActivity(updated);
+      setIsEditing(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Activity could not be updated.';
+      setError(message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleArchive() {
+    if (!activity || isArchiving) return;
+
+    Alert.alert('Archive activity?', 'This will hide the activity from the feed.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Archive',
+        style: 'destructive',
+        onPress: () => {
+          setIsArchiving(true);
+          setError(null);
+
+          archiveActivity(activity.id)
+            .then(() => {
+              router.replace('/home');
+            })
+            .catch((err: unknown) => {
+              const message =
+                err instanceof Error ? err.message : 'Activity could not be archived.';
+              setError(message);
+            })
+            .finally(() => {
+              setIsArchiving(false);
+            });
+        },
+      },
+    ]);
+  }
 
   if (loading) {
     return (
@@ -77,7 +152,7 @@ export default function ActivityDetailPage() {
           <Pressable
             onPress={() => router.back()}
             className={
-              'h-11 min-w-32 items-center justify-center rounded-md bg-app-dark-accent px-5'
+              'mt-4 h-11 min-w-32 items-center justify-center rounded-md bg-app-dark-accent px-5'
             }
           >
             <Text className={'font-semibold text-app-dark-text'}>Zurück</Text>
@@ -87,7 +162,7 @@ export default function ActivityDetailPage() {
     );
   }
 
-  if (error) {
+  if (error && !activity) {
     return (
       <SafeAreaView className={'flex-1 bg-app-dark-bg'}>
         <View className={'flex-1 items-center justify-center px-6'}>
@@ -96,7 +171,7 @@ export default function ActivityDetailPage() {
           <Pressable
             onPress={() => setReloadKey((prev) => prev + 1)}
             className={
-              'h-11 min-w-32 items-center justify-center rounded-md bg-app-dark-accent px-5'
+              'mt-4 h-11 min-w-32 items-center justify-center rounded-md bg-app-dark-accent px-5'
             }
           >
             <Text className={'font-semibold text-app-dark-text'}>Erneut versuchen</Text>
@@ -109,9 +184,10 @@ export default function ActivityDetailPage() {
   if (!activity) {
     return null;
   }
+
   return (
     <SafeAreaView className={'flex-1 bg-app-dark-bg'}>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
         <View className={'gap-4'}>
           <Pressable
             onPress={() => router.back()}
@@ -122,6 +198,8 @@ export default function ActivityDetailPage() {
             </View>
           </Pressable>
 
+          {error ? <Text className="text-sm text-red-300">{error}</Text> : null}
+
           {imageUrl ? (
             <Image
               source={{ uri: imageUrl }}
@@ -131,6 +209,46 @@ export default function ActivityDetailPage() {
           ) : (
             <View className={'h-64 w-full rounded-md bg-app-dark-card'} />
           )}
+
+          {isOwner ? (
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={() => setIsEditing((prev) => !prev)}
+                className="h-11 flex-1 items-center justify-center rounded-md bg-app-dark-accent px-4"
+              >
+                <Text className="font-semibold text-app-dark-text">
+                  {isEditing ? 'Close edit' : 'Edit'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleArchive}
+                className="h-11 flex-1 items-center justify-center rounded-md border border-app-dark-card px-4"
+              >
+                <Text className="font-semibold text-app-dark-text">
+                  {isArchiving ? 'Archiving...' : 'Archive'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {isOwner && isEditing ? (
+            <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
+              <Text className="mb-4 text-lg font-bold text-app-dark-text">Edit activity</Text>
+              <ActivityForm
+                initialValues={{
+                  title: activity.title,
+                  description: activity.description,
+                  plz: activity.plz,
+                  category: activity.category as ActivityWritePayload['category'],
+                }}
+                submitLabel="Save changes"
+                isSubmitting={isSaving}
+                onSubmit={handleUpdate}
+                onCancel={() => setIsEditing(false)}
+              />
+            </View>
+          ) : null}
 
           <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
             <Text className={'text-2xl font-bold text-app-dark-text'}>{activity.title}</Text>
@@ -157,10 +275,11 @@ export default function ActivityDetailPage() {
               </Text>
             </View>
           </View>
+
           <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
             <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>Beschreibung</Text>
 
-            <Text className={'text-md leading-6 text-app-dark-brand'}>
+            <Text className={'leading-6 text-app-dark-brand'}>
               {activity.description?.trim() || 'Keine Beschreibung vorhanden.'}
             </Text>
           </View>
