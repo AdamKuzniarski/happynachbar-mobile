@@ -53,6 +53,14 @@ function parseOrigins(raw?: string) {
   );
 }
 
+function getBearerFromHeader(raw?: string) {
+  if (!raw) return null;
+  const prefix = 'Bearer ';
+  if (!raw.startsWith(prefix)) return null;
+  const token = raw.slice(prefix.length).trim();
+  return token.length > 0 ? token : null;
+}
+
 @WebSocketGateway({
   namespace: '/chat',
   cors: { origin: true, credentials: true },
@@ -79,7 +87,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const cookies = parseCookie(client.handshake.headers.cookie);
-    const token = cookies[COOKIE_NAME];
+    const tokenFromAuth =
+      typeof client.handshake.auth?.token === 'string'
+        ? client.handshake.auth.token.trim()
+        : '';
+    const tokenFromHeader = getBearerFromHeader(
+      typeof client.handshake.headers.authorization === 'string'
+        ? client.handshake.headers.authorization
+        : undefined,
+    );
+    const tokenFromCookie = cookies[COOKIE_NAME];
+    const token = tokenFromAuth || tokenFromHeader || tokenFromCookie;
 
     if (!token) {
       client.disconnect(true);
