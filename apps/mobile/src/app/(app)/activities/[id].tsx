@@ -16,12 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityForm } from '@/components/activities/ActivityForm';
 import { getAuthMe } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
-import { getActivity, type ActivityDetail } from '@/lib/activities';
 import { openGroupConversation } from '@/lib/chat';
 import {
   deleteActivity as archiveActivity,
-  getActivity,
   updateActivity,
+  getActivity,
   type ActivityDetail,
   type ActivityWritePayload,
 } from '@/lib/activities';
@@ -98,11 +97,7 @@ export default function ActivityDetailPage() {
 
   const imageUrls = activity?.images?.map((image) => image.url).filter(Boolean) ?? [];
   const galleryImages =
-    imageUrls.length > 0
-      ? imageUrls
-      : activity?.thumbnailUrl
-        ? [activity.thumbnailUrl]
-        : [];
+    imageUrls.length > 0 ? imageUrls : activity?.thumbnailUrl ? [activity.thumbnailUrl] : [];
   const galleryImageWidth = Math.max(width - 32, 280);
   const creatorName = activity?.createdBy?.displayName?.trim() || 'Nachbar';
   const isOwner = !!activity && !!viewerUserId && activity.createdById === viewerUserId;
@@ -131,7 +126,8 @@ export default function ActivityDetailPage() {
       setActivity(updated);
       setIsEditing(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Aktivität konnte nicht gespeichert werden.';
+      const message =
+        err instanceof Error ? err.message : 'Aktivität konnte nicht gespeichert werden.';
       setError(message);
     } finally {
       setIsSaving(false);
@@ -234,7 +230,11 @@ export default function ActivityDetailPage() {
         params: { id: conversation.id },
       });
     } catch (nextError) {
-      setChatError(nextError instanceof Error ? nextError.message : 'Gruppenchat konnte nicht geöffnet werden.');
+      setChatError(
+        nextError instanceof Error
+          ? nextError.message
+          : 'Gruppenchat konnte nicht geöffnet werden.',
+      );
     } finally {
       setOpeningChat(false);
     }
@@ -264,10 +264,7 @@ export default function ActivityDetailPage() {
                 onMomentumScrollEnd={handleGalleryScroll}
               >
                 {galleryImages.map((url, index) => (
-                  <View
-                    key={`${url}-${index}`}
-                    style={{ width: galleryImageWidth }}
-                  >
+                  <View key={`${url}-${index}`} style={{ width: galleryImageWidth }}>
                     <Image
                       source={{ uri: url }}
                       resizeMode={'cover'}
@@ -318,7 +315,9 @@ export default function ActivityDetailPage() {
 
           {isOwner && isEditing ? (
             <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
-              <Text className="mb-4 text-lg font-bold text-app-dark-text">Aktivität bearbeiten</Text>
+              <Text className="mb-4 text-lg font-bold text-app-dark-text">
+                Aktivität bearbeiten
+              </Text>
               <ActivityForm
                 initialValues={{
                   title: activity.title,
