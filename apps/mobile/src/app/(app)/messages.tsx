@@ -9,6 +9,7 @@ import {
   getUnreadCount,
   type ConversationListItem,
 } from '@/lib/chat';
+import { onChatEvent } from '@/lib/chat-events';
 
 function getConversationTitle(item: ConversationListItem) {
   if (item.type === 'GROUP') {
@@ -71,6 +72,32 @@ export default function MessagesPage() {
     if (!isFocused) return;
     loadInbox({ silent: hasLoadedRef.current }).catch(() => {});
   }, [isFocused]);
+
+  useEffect(() => {
+    const unsubRefresh = onChatEvent('chat:refresh', () => {
+      loadInbox({ silent: true }).catch(() => {});
+    });
+    const unsubRead = onChatEvent('chat:read', () => {
+      loadInbox({ silent: true }).catch(() => {});
+    });
+    const unsubNew = onChatEvent('chat:message:new', () => {
+      loadInbox({ silent: true }).catch(() => {});
+    });
+    const unsubUpdated = onChatEvent('chat:message:updated', () => {
+      loadInbox({ silent: true }).catch(() => {});
+    });
+    const unsubDeleted = onChatEvent('chat:message:deleted', () => {
+      loadInbox({ silent: true }).catch(() => {});
+    });
+
+    return () => {
+      unsubRefresh();
+      unsubRead();
+      unsubNew();
+      unsubUpdated();
+      unsubDeleted();
+    };
+  }, []);
 
   function onRefresh() {
     setRefreshing(true);

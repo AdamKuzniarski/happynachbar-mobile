@@ -4,6 +4,7 @@ import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/lib/api';
 import { getActivity, type ActivityDetail } from '@/lib/activities';
+import { openGroupConversation } from '@/lib/chat';
 import { formatDate } from '@/lib/format';
 
 export default function ActivityDetailPage() {
@@ -17,6 +18,8 @@ export default function ActivityDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [openingChat, setOpeningChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   useEffect(() => {
     async function run() {
@@ -109,6 +112,26 @@ export default function ActivityDetailPage() {
   if (!activity) {
     return null;
   }
+
+  async function onOpenGroupChat() {
+    if (!activityId || openingChat) return;
+
+    setOpeningChat(true);
+    setChatError(null);
+
+    try {
+      const conversation = await openGroupConversation(activityId);
+      router.push({
+        pathname: '/(app)/messages/[id]',
+        params: { id: conversation.id },
+      });
+    } catch (nextError) {
+      setChatError(nextError instanceof Error ? nextError.message : 'Gruppenchat konnte nicht geöffnet werden.');
+    } finally {
+      setOpeningChat(false);
+    }
+  }
+
   return (
     <SafeAreaView className={'flex-1 bg-app-dark-bg'}>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -163,6 +186,24 @@ export default function ActivityDetailPage() {
             <Text className={'text-md leading-6 text-app-dark-brand'}>
               {activity.description?.trim() || 'Keine Beschreibung vorhanden.'}
             </Text>
+          </View>
+
+          <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
+            <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>Chat</Text>
+            {chatError ? <Text className={'mb-2 text-sm text-red-300'}>{chatError}</Text> : null}
+            <Pressable
+              onPress={() => {
+                onOpenGroupChat().catch(() => {});
+              }}
+              disabled={openingChat}
+              className={`h-11 items-center justify-center rounded-md px-4 ${
+                openingChat ? 'bg-app-dark-card' : 'bg-app-dark-accent'
+              }`}
+            >
+              <Text className={'font-semibold text-app-dark-text'}>
+                {openingChat ? 'Gruppenchat wird geöffnet...' : 'Gruppenchat öffnen'}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
