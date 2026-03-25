@@ -1,3 +1,5 @@
+import { getAuthToken } from '@/lib/auth-token';
+
 export type ApiErrorShape = {
   status: number;
   code: string;
@@ -107,6 +109,12 @@ export async function apiRequest<TResponse>(
     Accept: 'application/json',
     ...headers,
   };
+
+  const token = await getAuthToken();
+
+  if (token && !requestHeaders.Authorization) {
+    requestHeaders.Authorization = `Bearer ${token}`;
+  }
 
   const hasBody = body !== undefined && body !== null;
 
