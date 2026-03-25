@@ -18,7 +18,7 @@ export class ApiError extends Error implements ApiErrorShape {
   }
 }
 
-type ApiRequestOptions = Omit<RequestInit, 'body' | 'headers'> & {
+export type ApiRequestOptions = Omit<RequestInit, 'body' | 'headers'> & {
   body?: unknown;
   headers?: Record<string, string>;
 };
