@@ -7,70 +7,46 @@ import {
   Platform,
   Pressable,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { io, type Socket } from 'socket.io-client';
+import { ChatComposer } from '@/components/chat/ChatComposer';
+import { ChatMessageBubble } from '@/components/chat/ChatMessageBubble';
+import { ChatRoomHeader } from '@/components/chat/ChatRoomHeader';
 import { API_BASE_URL } from '@/lib/api';
 import { getAuthToken } from '@/lib/auth-token';
 import { emitChatEvent } from '@/lib/chat-events';
+import {
+  createLocalId,
+  getConversationSubtitle,
+  getConversationTitle,
+  getSocketErrorText,
+  mergeMessages,
+  sortMessagesDesc,
+  type RoomMessage,
+  upsertMessage,
+} from '@/lib/chat-room';
 import {
   emitDeleteMessage,
   emitEditMessage,
   emitSendMessage,
   getConversationMessages,
+  getConversation,
   markConversationAsRead,
+  type ConversationListItem,
   type Message,
 } from '@/lib/chat';
 import { formatDate } from '@/lib/format';
 import { getMe } from '@/lib/users';
 
-type RoomMessage = Message & {
-  localId?: string;
-  optimistic?: boolean;
-};
-
-function sortMessagesDesc(messages: RoomMessage[]) {
-  return messages
-    .slice()
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
-}
-
-function mergeMessages(messages: RoomMessage[]) {
-  const byId = new Map<string, RoomMessage>();
-
-  for (const message of messages) {
-    byId.set(message.id, message);
-  }
-
-  return sortMessagesDesc(Array.from(byId.values()));
-}
-
-function upsertMessage(items: RoomMessage[], message: RoomMessage) {
-  return mergeMessages([...items, message]);
-}
-
-function getSocketErrorText(error: unknown) {
-  if (error && typeof error === 'object' && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message;
-    }
-  }
-
-  return 'Socket-Verbindung fehlgeschlagen. Bitte API/Token prüfen.';
-}
-
-function createLocalId() {
-  return `local:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`;
-}
-
 export default function MessageRoomPage() {
   const params = useLocalSearchParams<{ id?: string }>();
   const conversationId = typeof params.id === 'string' ? params.id : '';
   const isFocused = useIsFocused();
+
+  const [conversation, setConversation] = useState<ConversationListItem | null>(null);
   const [items, setItems] = useState<RoomMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -83,29 +59,16 @@ export default function MessageRoomPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+
   const socketRef = useRef<Socket | null>(null);
   const hasLoadedInitialRef = useRef(false);
   const readInFlightRef = useRef(false);
-  const pendingSendTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map(),
-  );
+  const pendingSendTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
-    let cancelled = false;
-
     getMe()
-      .then((me) => {
-        if (cancelled) return;
-        setCurrentUserId(me.id);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setCurrentUserId(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .then((me) => setCurrentUserId(me.id))
+      .catch(() => setCurrentUserId(null));
   }, []);
 
   useEffect(() => {
@@ -131,7 +94,11 @@ export default function MessageRoomPage() {
         hasLoadedInitialRef.current = true;
       } catch (nextError) {
         if (cancelled) return;
-        setError(nextError instanceof Error ? nextError.message : 'Nachrichten konnten nicht geladen werden.');
+        setError(
+          nextError instanceof Error
+            ? nextError.message
+            : 'Nachrichten konnten nicht geladen werden.',
+        );
       } finally {
         if (cancelled) return;
         setLoading(false);
@@ -146,7 +113,8 @@ export default function MessageRoomPage() {
   }, [conversationId]);
 
   const markReadBestEffort = useCallback(async () => {
-    if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current) return;
+    if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current)
+      return;
     readInFlightRef.current = true;
     try {
       await markConversationAsRead(conversationId);
@@ -491,13 +459,17 @@ export default function MessageRoomPage() {
                             onPress={() => submitEdit(item.id)}
                             className="h-9 min-w-[80px] items-center justify-center rounded-md bg-app-dark-accent px-3"
                           >
-                            <Text className="text-xs font-semibold text-app-dark-text">Speichern</Text>
+                            <Text className="text-xs font-semibold text-app-dark-text">
+                              Speichern
+                            </Text>
                           </Pressable>
                           <Pressable
                             onPress={cancelEdit}
                             className="h-9 min-w-[80px] items-center justify-center rounded-md border border-app-dark-card px-3"
                           >
-                            <Text className="text-xs font-semibold text-app-dark-text">Abbrechen</Text>
+                            <Text className="text-xs font-semibold text-app-dark-text">
+                              Abbrechen
+                            </Text>
                           </Pressable>
                         </View>
                       </View>
@@ -512,7 +484,9 @@ export default function MessageRoomPage() {
                             <Text className="text-xs italic text-app-dark-brand">Bearbeitet</Text>
                           ) : null}
                           {item.optimistic ? (
-                            <Text className="text-xs italic text-app-dark-brand">Wird gesendet…</Text>
+                            <Text className="text-xs italic text-app-dark-brand">
+                              Wird gesendet…
+                            </Text>
                           ) : null}
                         </View>
                       </>
