@@ -1,14 +1,14 @@
 import type { ConversationListItem, Message } from '@/lib/chat';
 
 export type RoomMessage = Message & {
-  localId: string;
+  localId?: string;
   optimistic?: boolean;
 };
 
 export function sortMessagesDesc(messages: RoomMessage[]) {
   return messages
     .slice()
-    .sort((a, b) => b.createdAt.localeCompare(b.createdAt) || b.id.localeCompare(a.id));
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
 }
 
 export function mergeMessages(messages: RoomMessage[]) {
@@ -17,8 +17,8 @@ export function mergeMessages(messages: RoomMessage[]) {
   );
 }
 
-export function upsertMessage(items: RoomMessage[], messages: RoomMessage) {
-  return mergeMessages([...items, messages]);
+export function upsertMessage(items: RoomMessage[], message: RoomMessage) {
+  return mergeMessages([...items, message]);
 }
 
 export function createLocalId() {
@@ -32,11 +32,18 @@ export function getSocketErrorText(error: unknown) {
       return message;
     }
   }
-  return 'Socket-Verbindung fehlgeschlagen. Bitter API/Token prüfen.';
+
+  return 'Socket-Verbindung fehlgeschlagen. Bitte API/Token prüfen.';
 }
 
 export function getConversationTitle(item?: ConversationListItem | null) {
   if (!item) return 'Chat';
   if (item.type === 'GROUP') return item.activityTitle?.trim() || 'Gruppenchat';
+  return item.participantDisplayName?.trim() || 'Nachbar';
+}
+
+export function getConversationSubtitle(item?: ConversationListItem | null) {
+  if (!item) return null;
+  if (item.type === 'GROUP') return 'Gruppenchat';
   return item.activityTitle?.trim() || 'Direktnachricht';
 }
