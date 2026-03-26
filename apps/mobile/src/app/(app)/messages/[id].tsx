@@ -1,15 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  AppState,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { AppState, FlatList, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { io, type Socket } from 'socket.io-client';
@@ -18,9 +9,9 @@ import { ChatMessageBubble } from '@/components/chat/ChatMessageBubble';
 import { ChatRoomHeader } from '@/components/chat/ChatRoomHeader';
 import { API_BASE_URL } from '@/lib/api';
 import { getAuthToken } from '@/lib/auth-token';
-import { emitChatEvent } from '@/lib/chat-events';
 import {
   createLocalId,
+  getConversationSubtitle,
   getConversationTitle,
   getSocketErrorText,
   mergeMessages,
@@ -28,17 +19,17 @@ import {
   type RoomMessage,
   upsertMessage,
 } from '@/lib/chat-room';
+import { emitChatEvent } from '@/lib/chat-events';
 import {
   emitDeleteMessage,
   emitEditMessage,
   emitSendMessage,
-  getConversationMessages,
   getConversation,
+  getConversationMessages,
   markConversationAsRead,
   type ConversationListItem,
   type Message,
 } from '@/lib/chat';
-import { formatDate } from '@/lib/format';
 import { getMe } from '@/lib/users';
 
 export default function MessageRoomPage() {
@@ -81,7 +72,7 @@ export default function MessageRoomPage() {
         return;
       }
 
-      setLoadingOlder(true);
+      setLoading(true);
       setError(null);
       setActionError(null);
 
@@ -90,6 +81,7 @@ export default function MessageRoomPage() {
           getConversationMessages(conversationId),
           getConversation(conversationId).catch(() => null),
         ]);
+
         if (!active) return;
 
         setItems(sortMessagesDesc((messagesResponse.items ?? []) as RoomMessage[]));
@@ -101,7 +93,7 @@ export default function MessageRoomPage() {
         setError(
           nextError instanceof Error
             ? nextError.message
-            : 'Nachrichten konnten nicht gelesen werden.',
+            : 'Nachrichten konnten nicht geladen werden.',
         );
       } finally {
         if (active) {
@@ -109,6 +101,7 @@ export default function MessageRoomPage() {
         }
       }
     }
+
     loadRoom().catch(() => {});
 
     return () => {
@@ -117,8 +110,9 @@ export default function MessageRoomPage() {
   }, [conversationId]);
 
   const markReadBestEffort = useCallback(async () => {
-    if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current)
+    if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current) {
       return;
+    }
 
     readInFlightRef.current = true;
 
@@ -126,7 +120,7 @@ export default function MessageRoomPage() {
       await markConversationAsRead(conversationId);
       emitChatEvent('chat:read', { conversationId });
     } catch {
-      // Best effort.
+      // best effort
     } finally {
       readInFlightRef.current = false;
     }
@@ -274,14 +268,15 @@ export default function MessageRoomPage() {
   }, [conversationId, currentUserId, markReadBestEffort]);
 
   async function loadOlderMessages() {
-    if (!conversationId || !nextCursor || loadingOlder || loading) return;
+    if (!conversationId || !nextCursor || loading || loadingOlder) {
+      return;
+    }
 
     setLoadingOlder(true);
 
     try {
       const response = await getConversationMessages(conversationId, { cursor: nextCursor });
-      const olderPage = (response.items ?? []) as RoomMessage[];
-      setItems((prev) => mergeMessages([...prev, ...olderPage]));
+      setItems((prev) => mergeMessages([...prev, ...((response.items ?? []) as RoomMessage[])]));
       setNextCursor(response.nextCursor ?? null);
     } catch {
       setActionError('Ältere Nachrichten konnten nicht geladen werden.');
@@ -292,6 +287,8 @@ export default function MessageRoomPage() {
 
   function onSendMessage() {
     const body = text.trim();
+    const socket = socketRef.current;
+
     if (!body) return;
 
     if (!conversationId) {
@@ -299,8 +296,7 @@ export default function MessageRoomPage() {
       return;
     }
 
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
+    if (!socket?.connected) {
       setSendError('Chat ist gerade offline. Bitte kurz erneut versuchen.');
       return;
     }
@@ -320,9 +316,9 @@ export default function MessageRoomPage() {
     };
 
     setItems((prev) => upsertMessage(prev, optimisticMessage));
+    setText('');
     setSendError(null);
     setActionError(null);
-    setText('');
     emitSendMessage(socket, conversationId, body);
 
     const timeoutId = setTimeout(() => {
@@ -348,10 +344,11 @@ export default function MessageRoomPage() {
 
   function submitEdit(messageId: string) {
     const body = editingText.trim();
+    const socket = socketRef.current;
+
     if (!body) return;
 
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
+    if (!socket?.connected) {
       setActionError('Bearbeiten fehlgeschlagen: Chat ist offline.');
       return;
     }
@@ -374,7 +371,8 @@ export default function MessageRoomPage() {
 
   function submitDelete(messageId: string) {
     const socket = socketRef.current;
-    if (!socket || !socket.connected) {
+
+    if (!socket?.connected) {
       setActionError('Löschen fehlgeschlagen: Chat ist offline.');
       return;
     }
@@ -392,6 +390,7 @@ export default function MessageRoomPage() {
     );
     emitDeleteMessage(socket, messageId);
     emitChatEvent('chat:message:deleted', { conversationId });
+
     if (editingId === messageId) {
       cancelEdit();
     }
@@ -400,17 +399,17 @@ export default function MessageRoomPage() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+
       <SafeAreaView className="flex-1 bg-app-dark-bg">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View className="px-4 pb-3 pt-4">
-            <Text className="text-lg font-bold text-app-dark-text">Chat</Text>
-            <Text className="mt-1 text-xs text-app-dark-brand">
-              {socketConnected ? 'Verbunden' : 'Offline'}
-            </Text>
-          </View>
+          <ChatRoomHeader
+            title={getConversationTitle(conversation)}
+            subtitle={getConversationSubtitle(conversation)}
+            isOnline={socketConnected}
+          />
 
           {loading ? (
             <View className="flex-1 items-center justify-center px-6">
@@ -430,12 +429,7 @@ export default function MessageRoomPage() {
                 loadOlderMessages().catch(() => {});
               }}
               maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingBottom: 16,
-                gap: 10,
-                flexGrow: 1,
-              }}
+              contentContainerStyle={{ paddingBottom: 16, gap: 10, flexGrow: 1 }}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-10">
                   <Text className="text-center text-base text-app-dark-brand">
@@ -445,118 +439,43 @@ export default function MessageRoomPage() {
               }
               ListFooterComponent={
                 loadingOlder ? (
-                  <Text className="pt-2 text-center text-xs text-app-dark-brand">
+                  <Text className="px-4 pt-2 text-center text-xs text-app-dark-brand">
                     Ältere Nachrichten werden geladen...
                   </Text>
                 ) : null
               }
               renderItem={({ item }) => {
                 const isMine = !!currentUserId && item.senderId === currentUserId;
-                const isEditing = editingId === item.id;
 
                 return (
-                  <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-3">
-                    <Text className="text-xs text-app-dark-brand">
-                      {isMine ? 'Du' : item.senderDisplayName?.trim() || 'Nachbar'} ·{' '}
-                      {formatDate(item.createdAt)}
-                    </Text>
-
-                    {isEditing ? (
-                      <View className="mt-2 gap-2">
-                        <TextInput
-                          value={editingText}
-                          onChangeText={setEditingText}
-                          placeholder="Nachricht bearbeiten..."
-                          placeholderTextColor="#B8C3AF"
-                          className="h-11 rounded-md border border-app-dark-card bg-app-dark-bg px-3 text-base text-app-dark-text"
-                        />
-                        <View className="flex-row gap-2">
-                          <Pressable
-                            onPress={() => submitEdit(item.id)}
-                            className="h-9 min-w-[80px] items-center justify-center rounded-md bg-app-dark-accent px-3"
-                          >
-                            <Text className="text-xs font-semibold text-app-dark-text">
-                              Speichern
-                            </Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={cancelEdit}
-                            className="h-9 min-w-[80px] items-center justify-center rounded-md border border-app-dark-card px-3"
-                          >
-                            <Text className="text-xs font-semibold text-app-dark-text">
-                              Abbrechen
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : (
-                      <>
-                        <Text className="mt-1 text-sm text-app-dark-text">
-                          {item.deletedAt ? 'Nachricht gelöscht' : item.body || '—'}
-                        </Text>
-
-                        <View className="mt-1 flex-row items-center gap-2">
-                          {item.editedAt && !item.deletedAt ? (
-                            <Text className="text-xs italic text-app-dark-brand">Bearbeitet</Text>
-                          ) : null}
-                          {item.optimistic ? (
-                            <Text className="text-xs italic text-app-dark-brand">
-                              Wird gesendet…
-                            </Text>
-                          ) : null}
-                        </View>
-                      </>
-                    )}
-
-                    {isMine && !item.deletedAt && !item.optimistic && !isEditing ? (
-                      <View className="mt-2 flex-row gap-2">
-                        <Pressable
-                          onPress={() => startEdit(item)}
-                          className="h-8 min-w-[70px] items-center justify-center rounded-md border border-app-dark-card px-2"
-                        >
-                          <Text className="text-xs text-app-dark-text">Bearbeiten</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => submitDelete(item.id)}
-                          className="h-8 min-w-[70px] items-center justify-center rounded-md border border-red-500/60 px-2"
-                        >
-                          <Text className="text-xs text-red-300">Löschen</Text>
-                        </Pressable>
-                      </View>
-                    ) : null}
-                  </View>
+                  <ChatMessageBubble
+                    item={item}
+                    isMine={isMine}
+                    isEditing={editingId === item.id}
+                    editingText={editingText}
+                    onChangeEditingText={setEditingText}
+                    onStartEdit={() => startEdit(item)}
+                    onCancelEdit={cancelEdit}
+                    onSubmitEdit={() => submitEdit(item.id)}
+                    onDelete={() => submitDelete(item.id)}
+                  />
                 );
               }}
             />
           )}
 
-          <View className="border-t border-app-dark-card px-4 pb-4 pt-3">
-            {sendError ? <Text className="mb-2 text-sm text-red-300">{sendError}</Text> : null}
-            {actionError ? <Text className="mb-2 text-sm text-red-300">{actionError}</Text> : null}
-            <View className="flex-row items-center gap-2">
-              <TextInput
-                value={text}
-                onChangeText={(nextValue) => {
-                  setText(nextValue);
-                  if (sendError) {
-                    setSendError(null);
-                  }
-                }}
-                placeholder="Nachricht schreiben..."
-                placeholderTextColor="#B8C3AF"
-                className="h-11 flex-1 rounded-md border border-app-dark-card bg-app-dark-bg px-3 text-base text-app-dark-text"
-              />
-              <Pressable
-                onPress={onSendMessage}
-                disabled={!text.trim()}
-                className={`h-11 min-w-[84px] items-center justify-center rounded-md px-3 ${
-                  text.trim() ? 'bg-app-dark-accent' : 'bg-app-dark-card'
-                }`}
-              >
-                <Text className="text-sm font-semibold text-app-dark-text">Senden</Text>
-              </Pressable>
-            </View>
-          </View>
+          <ChatComposer
+            value={text}
+            onChange={(nextValue) => {
+              setText(nextValue);
+              if (sendError) {
+                setSendError(null);
+              }
+            }}
+            onSend={onSendMessage}
+            sendError={sendError}
+            actionError={actionError}
+          />
         </KeyboardAvoidingView>
       </SafeAreaView>
     </>
