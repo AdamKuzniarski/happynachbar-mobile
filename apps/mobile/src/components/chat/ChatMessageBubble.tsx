@@ -91,7 +91,7 @@ export function ChatMessageBubble({
 
               {item.optimistic ? (
                 <View className={'flex-row items-center gap-1'}>
-                  <Ionicons name="time-outline" size={12} color="#F36EE" />
+                  <Ionicons name="time-outline" size={12} color="#F3F6EE" />
                   <Text className={'text-[11px] italic text-app-dark-brand'}>Wird gesendet...</Text>
                 </View>
               ) : null}
