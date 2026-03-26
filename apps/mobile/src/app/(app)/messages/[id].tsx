@@ -407,7 +407,7 @@ export default function MessageRoomPage() {
         >
           <ChatRoomHeader
             title={getConversationTitle(conversation)}
-            subtitle={getConversationSubtitle(conversation)}
+            subtitle={getConversationSubtitle(conversation) ?? undefined}
             isOnline={socketConnected}
           />
 
