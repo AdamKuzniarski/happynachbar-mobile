@@ -74,6 +74,12 @@ export function getConversations() {
   return authedRequest<ConversationListResponse>('/chat/conversations');
 }
 
+export function getConversation(conversationId: string) {
+  return authedRequest<ConversationListItem>(
+    `/chat/conversations/${encodeURIComponent(conversationId)}`,
+  );
+}
+
 export function getConversationMessages(
   conversationId: string,
   options: { cursor?: string; take?: number } = {},
@@ -91,9 +97,12 @@ export function getUnreadCount() {
 }
 
 export function markConversationAsRead(conversationId: string) {
-  return authedRequest<{ ok: boolean }>(`/chat/conversations/${encodeURIComponent(conversationId)}/read`, {
-    method: 'POST',
-  });
+  return authedRequest<{ ok: boolean }>(
+    `/chat/conversations/${encodeURIComponent(conversationId)}/read`,
+    {
+      method: 'POST',
+    },
+  );
 }
 
 export function openGroupConversation(activityId: string) {
