@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
@@ -20,7 +21,6 @@ import { getAuthToken } from '@/lib/auth-token';
 import { emitChatEvent } from '@/lib/chat-events';
 import {
   createLocalId,
-  getConversationSubtitle,
   getConversationTitle,
   getSocketErrorText,
   mergeMessages,
@@ -72,43 +72,47 @@ export default function MessageRoomPage() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
 
-    async function loadInitialMessages() {
+    async function loadRoom() {
       if (!conversationId) {
         setError('Ungültige Conversation-ID.');
         setLoading(false);
         return;
       }
 
-      setLoading(true);
+      setLoadingOlder(true);
       setError(null);
+      setActionError(null);
 
       try {
-        const response = await getConversationMessages(conversationId);
-        if (cancelled) return;
+        const [messagesResponse, conversationResponse] = await Promise.all([
+          getConversationMessages(conversationId),
+          getConversation(conversationId).catch(() => null),
+        ]);
+        if (!active) return;
 
-        const latestFirst = (response.items ?? []) as RoomMessage[];
-        setItems(sortMessagesDesc(latestFirst));
-        setNextCursor(response.nextCursor ?? null);
+        setItems(sortMessagesDesc((messagesResponse.items ?? []) as RoomMessage[]));
+        setNextCursor(messagesResponse.nextCursor ?? null);
+        setConversation(conversationResponse);
         hasLoadedInitialRef.current = true;
       } catch (nextError) {
-        if (cancelled) return;
+        if (!active) return;
         setError(
           nextError instanceof Error
             ? nextError.message
-            : 'Nachrichten konnten nicht geladen werden.',
+            : 'Nachrichten konnten nicht gelesen werden.',
         );
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
-
-    loadInitialMessages().catch(() => {});
+    loadRoom().catch(() => {});
 
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [conversationId]);
 
