@@ -119,7 +119,9 @@ export default function MessageRoomPage() {
   const markReadBestEffort = useCallback(async () => {
     if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current)
       return;
+
     readInFlightRef.current = true;
+
     try {
       await markConversationAsRead(conversationId);
       emitChatEvent('chat:read', { conversationId });
@@ -132,11 +134,11 @@ export default function MessageRoomPage() {
 
   useEffect(() => {
     markReadBestEffort().catch(() => {});
-  }, [isFocused, conversationId, loading, markReadBestEffort]);
+  }, [loading, markReadBestEffort]);
 
   useEffect(() => {
     let disposed = false;
-    const pendingTimeoutMap = pendingSendTimeoutsRef.current;
+    const pendingTimeouts = pendingSendTimeoutsRef.current;
 
     async function connectSocket() {
       if (!conversationId) return;
@@ -149,71 +151,84 @@ export default function MessageRoomPage() {
         auth: token ? { token } : undefined,
       });
 
-      function handleConnect() {
-        setSocketConnected(true);
-        setSendError(null);
-        socket.emit('chat:join', { conversationId });
-      }
+      const replaceOptimisticMessage = (nextMessage: Message) => {
+        if (!currentUserId || nextMessage.senderId !== currentUserId) {
+          return false;
+        }
 
-      function handleDisconnect() {
-        setSocketConnected(false);
-      }
-
-      function handleConnectError(nextError: unknown) {
-        setSocketConnected(false);
-        setSendError(getSocketErrorText(nextError));
-      }
-
-      function consumeOptimisticIfMatching(nextMessage: Message) {
-        if (!currentUserId || nextMessage.senderId !== currentUserId) return false;
         const incomingBody = (nextMessage.body ?? '').trim();
-        if (!incomingBody) return false;
+        if (!incomingBody) {
+          return false;
+        }
 
         let matchedLocalId: string | null = null;
 
         setItems((prev) => {
-          for (const item of prev) {
-            if (!item.optimistic) continue;
-            if ((item.body ?? '').trim() !== incomingBody) continue;
-            matchedLocalId = item.localId ?? null;
-            return mergeMessages([
-              ...prev.filter((row) => row.id !== item.id),
-              nextMessage as RoomMessage,
-            ]);
+          const optimisticItem = prev.find(
+            (item) => item.optimistic && (item.body ?? '').trim() === incomingBody,
+          );
+
+          if (!optimisticItem) {
+            return prev;
           }
 
-          return upsertMessage(prev, nextMessage as RoomMessage);
+          matchedLocalId = optimisticItem.localId ?? null;
+
+          return mergeMessages([
+            ...prev.filter((item) => item.id !== optimisticItem.id),
+            nextMessage as RoomMessage,
+          ]);
         });
 
         if (matchedLocalId) {
-          const timeoutId = pendingTimeoutMap.get(matchedLocalId);
+          const timeoutId = pendingTimeouts.get(matchedLocalId);
           if (timeoutId) {
             clearTimeout(timeoutId);
-            pendingTimeoutMap.delete(matchedLocalId);
+            pendingTimeouts.delete(matchedLocalId);
           }
         }
 
         return !!matchedLocalId;
-      }
+      };
 
-      function handleMessageNew(nextMessage: Message) {
+      const handleConnect = () => {
+        setSocketConnected(true);
+        setSendError(null);
+        socket.emit('chat:join', { conversationId });
+      };
+
+      const handleDisconnect = () => {
+        setSocketConnected(false);
+      };
+
+      const handleConnectError = (nextError: unknown) => {
+        setSocketConnected(false);
+        setSendError(getSocketErrorText(nextError));
+      };
+
+      const handleMessageNew = (nextMessage: Message) => {
         if (nextMessage.conversationId !== conversationId) return;
-        consumeOptimisticIfMatching(nextMessage);
+
+        const replaced = replaceOptimisticMessage(nextMessage);
+        if (!replaced) {
+          setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
+        }
+
         emitChatEvent('chat:message:new', { conversationId });
         markReadBestEffort().catch(() => {});
-      }
+      };
 
-      function handleMessageUpdated(nextMessage: Message) {
+      const handleMessageUpdated = (nextMessage: Message) => {
         if (nextMessage.conversationId !== conversationId) return;
         setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
         emitChatEvent('chat:message:updated', { conversationId });
-      }
+      };
 
-      function handleMessageDeleted(nextMessage: Message) {
+      const handleMessageDeleted = (nextMessage: Message) => {
         if (nextMessage.conversationId !== conversationId) return;
         setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
         emitChatEvent('chat:message:deleted', { conversationId });
-      }
+      };
 
       socket.on('connect', handleConnect);
       socket.on('disconnect', handleDisconnect);
@@ -227,23 +242,20 @@ export default function MessageRoomPage() {
 
     connectSocket().catch(() => {});
 
-    const appStateSub = AppState.addEventListener('change', (nextState) => {
-      const socket = socketRef.current;
-      if (!socket) return;
-
-      if (nextState === 'active' && !socket.connected) {
-        socket.connect();
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && socketRef.current && !socketRef.current.connected) {
+        socketRef.current.connect();
       }
     });
 
     return () => {
       disposed = true;
-      appStateSub.remove();
+      appStateSubscription.remove();
 
-      for (const timeoutId of pendingTimeoutMap.values()) {
+      for (const timeoutId of pendingTimeouts.values()) {
         clearTimeout(timeoutId);
       }
-      pendingTimeoutMap.clear();
+      pendingTimeouts.clear();
 
       const socket = socketRef.current;
       if (!socket) return;
@@ -259,7 +271,7 @@ export default function MessageRoomPage() {
       socketRef.current = null;
       setSocketConnected(false);
     };
-  }, [conversationId, currentUserId, isFocused, markReadBestEffort]);
+  }, [conversationId, currentUserId, markReadBestEffort]);
 
   async function loadOlderMessages() {
     if (!conversationId || !nextCursor || loadingOlder || loading) return;
