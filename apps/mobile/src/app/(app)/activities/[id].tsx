@@ -16,8 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActivityDescriptionSection } from '@/components/activities/ActivityDescriptionSection';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
+import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActions';
 import { ActivityForm } from '@/components/activities/ActivityForm';
-import { IconActionButton } from '@/components/ui/IconActionButton';
 import { getAuthMe } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
 import { openGroupConversation } from '@/lib/chat';
@@ -472,15 +472,10 @@ export default function ActivityDetailPage() {
               )}
 
               {isOwner ? (
-                <View className="flex-row items-center justify-between">
-                  <IconActionButton onPress={handleArchive}>
-                    <Ionicons name="trash-outline" size={16} color="#F3F6EE" />
-                  </IconActionButton>
-
-                  <IconActionButton onPress={() => setIsEditing((prev) => !prev)}>
-                    <Ionicons name="create-outline" size={16} color="#F3F6EE" />
-                  </IconActionButton>
-                </View>
+                <ActivityOwnerActions
+                  onArchive={handleArchive}
+                  onEdit={() => setIsEditing((prev) => !prev)}
+                />
               ) : null}
             </>
           ) : null}
