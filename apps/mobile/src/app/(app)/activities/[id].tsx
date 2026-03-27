@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
 import { ActivityForm } from '@/components/activities/ActivityForm';
 import { IconActionButton } from '@/components/ui/IconActionButton';
-import { InfoPill } from '@/components/ui/InfoPill';
 import { SectionCard } from '@/components/ui/SectionCard';
 import { getAuthMe } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
@@ -509,31 +509,13 @@ export default function ActivityDetailPage() {
 
           {!isEditing ? (
             <>
-              <SectionCard>
-                <View className="flex-row flex-wrap justify-center gap-2">
-                  <InfoPill icon={<Ionicons name="calendar-outline" size={14} color="#B8C3AF" />}>
-                    {formatDate(activity.startAt)}
-                  </InfoPill>
-
-                  <InfoPill icon={<Ionicons name="location-outline" size={14} color="#B8C3AF" />}>
-                    {activity.plz || '—'}
-                  </InfoPill>
-                </View>
-
-                <View className="mt-4 items-center gap-2">
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons name="person-outline" size={13} color="#8F9B87" />
-                    <Text className="text-sm text-app-dark-brand">{creatorName}</Text>
-                  </View>
-
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons name="time-outline" size={13} color="#8F9B87" />
-                    <Text className="text-xs tracking-[0.3px] text-app-dark-brand">
-                      aktualisiert {formatDate(activity.updatedAt)}
-                    </Text>
-                  </View>
-                </View>
-              </SectionCard>
+              <ActivityMetaSection
+                startAt={activity.startAt}
+                plz={activity.plz}
+                creatorName={creatorName}
+                updatedAt={activity.updatedAt}
+                formatDate={formatDate}
+              />
 
               <SectionCard>
                 <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>
