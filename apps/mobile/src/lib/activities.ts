@@ -24,6 +24,12 @@ export type ActivityDetail = Activity & {
   createdById?: string;
   createdAt?: string;
   images?: ActivityImage[];
+  isJoined?: boolean;
+};
+
+export type ActivityParticipant = {
+  id: string;
+  displayName: string | null;
 };
 
 export type ListActivitiesResponse = {
@@ -88,4 +94,24 @@ export function deleteActivity(id: string) {
   return apiRequest<{ ok: true }>(`/activities/${id}`, {
     method: 'DELETE',
   });
+}
+
+export function joinActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}/join`, {
+    method: 'POST',
+  });
+}
+
+export function leaveActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}/join`, {
+    method: 'DELETE',
+  });
+}
+
+export function getActivityJoinStatus(id: string) {
+  return apiRequest<{ joined: boolean }>(`/activities/${id}/joined`);
+}
+
+export function listActivityParticipants(id: string) {
+  return apiRequest<ActivityParticipant[]>(`/activities/${id}/participants`);
 }
