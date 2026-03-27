@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActivityDescriptionSection } from '@/components/activities/ActivityDescriptionSection';
 import { ActivityEditPanel } from '@/components/activities/ActivityEditPanel';
 import { ActivityHero } from '@/components/activities/ActivityHero';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
@@ -456,7 +455,15 @@ export default function ActivityDetailPage() {
                 formatDate={formatDate}
               />
 
-              <ActivityDescriptionSection description={activity.description} />
+              <SectionCard>
+                <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>
+                  Beschreibung
+                </Text>
+
+                <Text className={'leading-6 text-app-dark-brand'}>
+                  {activity.description?.trim() || 'Keine Beschreibung vorhanden.'}
+                </Text>
+              </SectionCard>
 
               {!isOwner ? (
                 <View className={'rounded-md bg-app-dark-bg p-4'}>
