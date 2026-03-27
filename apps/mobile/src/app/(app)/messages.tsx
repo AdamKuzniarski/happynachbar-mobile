@@ -4,12 +4,8 @@ import { router } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatDate } from '@/lib/format';
-import {
-  getConversations,
-  getUnreadCount,
-  type ConversationListItem,
-} from '@/lib/chat';
-import { onChatEvent } from '@/lib/chat-events';
+import { getConversations, getUnreadCount, type ConversationListItem } from '@/lib/chat';
+import { onChatEvent } from '@/lib/chat-room-socket';
 
 function getConversationTitle(item: ConversationListItem) {
   if (item.type === 'GROUP') {
@@ -58,7 +54,11 @@ export default function MessagesPage() {
       hasLoadedRef.current = true;
     } catch (nextError) {
       if (!mountedRef.current || requestId !== requestIdRef.current) return;
-      setError(nextError instanceof Error ? nextError.message : 'Nachrichten konnten nicht geladen werden.');
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : 'Nachrichten konnten nicht geladen werden.',
+      );
     } finally {
       if (!mountedRef.current || requestId !== requestIdRef.current) return;
       if (!silent) {
@@ -155,7 +155,9 @@ export default function MessagesPage() {
                   {getConversationTitle(item)}
                 </Text>
                 {item.lastMessageAt ? (
-                  <Text className="text-xs text-app-dark-brand">{formatDate(item.lastMessageAt)}</Text>
+                  <Text className="text-xs text-app-dark-brand">
+                    {formatDate(item.lastMessageAt)}
+                  </Text>
                 ) : null}
               </View>
 

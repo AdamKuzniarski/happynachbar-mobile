@@ -19,7 +19,7 @@ import {
   type RoomMessage,
   upsertMessage,
 } from '@/lib/chat-room';
-import { emitChatEvent } from '@/lib/chat-events';
+import { emitChatEvent } from '@/lib/chat-room-socket';
 import {
   emitDeleteMessage,
   emitEditMessage,
