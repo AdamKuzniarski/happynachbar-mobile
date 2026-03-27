@@ -21,7 +21,12 @@ export async function connectChatRoomSocket(conversationId: string, handlers: Ha
     auth: token ? { token } : undefined,
   });
 
-  socket.on('connect', handlers.onConnect);
+  const handleConnect = () => {
+    socket.emit('chat:join', { conversationId });
+    handlers.onConnect();
+  };
+
+  socket.on('connect', handleConnect);
   socket.on('disconnect', handlers.onDisconnect);
   socket.on('connect_error', handlers.onConnectError);
   socket.on('message:new', handlers.onMessageNew);
@@ -38,7 +43,7 @@ export async function connectChatRoomSocket(conversationId: string, handlers: Ha
     socket,
     cleanup() {
       appStateSubscription.remove();
-      socket.off('connect', handlers.onConnect);
+      socket.off('connect', handleConnect);
       socket.off('disconnect', handlers.onDisconnect);
       socket.off('connect_error', handlers.onConnectError);
       socket.off('message:new', handlers.onMessageNew);
