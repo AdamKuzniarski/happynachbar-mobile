@@ -11,7 +11,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { ActivityEditPanel } from '@/components/activities/ActivityEditPanel';
 import { ActivityHero } from '@/components/activities/ActivityHero';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
