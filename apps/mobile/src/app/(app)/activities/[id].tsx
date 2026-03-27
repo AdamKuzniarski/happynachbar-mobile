@@ -14,10 +14,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ActivityDescriptionSection } from '@/components/activities/ActivityDescriptionSection';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
 import { ActivityForm } from '@/components/activities/ActivityForm';
 import { IconActionButton } from '@/components/ui/IconActionButton';
-import { SectionCard } from '@/components/ui/SectionCard';
 import { getAuthMe } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
 import { openGroupConversation } from '@/lib/chat';
@@ -517,15 +517,7 @@ export default function ActivityDetailPage() {
                 formatDate={formatDate}
               />
 
-              <SectionCard>
-                <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>
-                  Beschreibung
-                </Text>
-
-                <Text className={'leading-6 text-app-dark-brand'}>
-                  {activity.description?.trim() || 'Keine Beschreibung vorhanden.'}
-                </Text>
-              </SectionCard>
+              <ActivityDescriptionSection description={activity.description} />
 
               {!isOwner ? (
                 <View className={'rounded-md bg-app-dark-bg p-4'}>
