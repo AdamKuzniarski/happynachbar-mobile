@@ -131,6 +131,7 @@ export function useActivityDetailScreen({ activityId, onActivityLoaded }: Props)
 
   return {
     activity,
+    setActivity,
     viewerUserId,
     loading,
     isEditing,

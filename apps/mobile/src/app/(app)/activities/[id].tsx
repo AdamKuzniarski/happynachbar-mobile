@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  Image,
   Pressable,
   ScrollView,
   Text,
@@ -17,17 +16,10 @@ import { ActivityEditPanel } from '@/components/activities/ActivityEditPanel';
 import { ActivityHero } from '@/components/activities/ActivityHero';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
 import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActions';
-import { getAuthMe } from '@/lib/auth';
+import { SectionCard } from '@/components/ui/SectionCard';
 import { openGroupConversation } from '@/lib/chat';
-import {
-  getActivityJoinStatus,
-  joinActivity,
-  leaveActivity,
-  listActivityParticipants,
-  type ActivityParticipant,
-  type ActivityWritePayload,
-} from '@/lib/activities';
 import { formatDate } from '@/lib/format';
+import { useActivityParticipation } from '@/lib/use-activity-participation';
 import { useActivityDetailScreen } from '@/lib/use-activity-detail-screen';
 
 function getInitials(name: string) {
@@ -46,18 +38,11 @@ export default function ActivityDetailPage() {
   const [openingChat, setOpeningChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [joined, setJoined] = useState(false);
-  const [checkingJoinStatus, setCheckingJoinStatus] = useState(false);
-  const [joining, setJoining] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<ActivityParticipant[]>([]);
-  const [participantsLoading, setParticipantsLoading] = useState(false);
-  const [participantsError, setParticipantsError] = useState<string | null>(null);
   const { width } = useWindowDimensions();
 
   const {
     activity,
+    setActivity,
     viewerUserId,
     loading,
     isEditing,
@@ -65,19 +50,35 @@ export default function ActivityDetailPage() {
     error,
     notFound,
     isOwner,
-    setError,
+    setReloadKey,
     setIsEditing,
     handleUpdate,
     handleArchive,
   } = useActivityDetailScreen({
     activityId,
     onActivityLoaded: (data) => {
-      setJoinError(null);
       setChatError(null);
-      setParticipants([]);
-      setParticipantsError(null);
-      setJoined(!!data.isJoined);
+      syncFromActivity(data);
     },
+  });
+  const {
+    joined,
+    checkingJoinStatus,
+    joining,
+    leaving,
+    joinError,
+    participants,
+    participantsLoading,
+    participantsError,
+    syncFromActivity,
+    applyParticipantCountDelta,
+    handleJoin,
+    handleLeave,
+  } = useActivityParticipation({
+    activityId,
+    activity,
+    viewerUserId,
+    isOwner,
   });
 
   const imageUrls = activity?.images?.map((image) => image.url).filter(Boolean) ?? [];
@@ -98,71 +99,6 @@ export default function ActivityDetailPage() {
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [activity?.id, galleryImages.length]);
-
-  useEffect(() => {
-    if (!activityId || !activity || !viewerUserId || isOwner) {
-      setCheckingJoinStatus(false);
-      setJoined(!!activity?.isJoined);
-      return;
-    }
-
-    let active = true;
-    setCheckingJoinStatus(true);
-
-    getActivityJoinStatus(activityId)
-      .then((res) => {
-        if (!active) return;
-        setJoined(!!res.joined);
-      })
-      .catch(() => {
-        if (!active) return;
-        setJoinError('Teilnahmestatus konnte nicht geladen werden.');
-      })
-      .finally(() => {
-        if (!active) return;
-        setCheckingJoinStatus(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [activityId, activity, viewerUserId, isOwner]);
-
-  useEffect(() => {
-    if (!activityId || !viewerUserId || !isOwner) {
-      setParticipants([]);
-      setParticipantsLoading(false);
-      setParticipantsError(null);
-      return;
-    }
-
-    let active = true;
-    setParticipantsLoading(true);
-    setParticipantsError(null);
-
-    listActivityParticipants(activityId)
-      .then((rows) => {
-        if (!active) return;
-        setParticipants(rows);
-      })
-      .catch((nextError) => {
-        if (!active) return;
-        setParticipants([]);
-        setParticipantsError(
-          nextError instanceof Error
-            ? nextError.message
-            : 'Teilnehmende konnten nicht geladen werden.',
-        );
-      })
-      .finally(() => {
-        if (!active) return;
-        setParticipantsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [activityId, viewerUserId, isOwner]);
 
   if (loading) {
     return (
@@ -238,68 +174,6 @@ export default function ActivityDetailPage() {
       );
     } finally {
       setOpeningChat(false);
-    }
-  }
-
-  async function handleJoin() {
-    if (!activityId || joining || leaving || checkingJoinStatus) return;
-
-    if (!viewerUserId) {
-      setJoinError('Bitte logge dich ein, um teilzunehmen.');
-      return;
-    }
-
-    setJoinError(null);
-    setJoining(true);
-
-    try {
-      await joinActivity(activityId);
-      setJoined(true);
-      setActivity((current) =>
-        current
-          ? {
-              ...current,
-              isJoined: true,
-              participantsCount: (current.participantsCount ?? 0) + 1,
-            }
-          : current,
-      );
-    } catch (nextError) {
-      setJoinError(
-        nextError instanceof Error
-          ? nextError.message
-          : 'Teilnahme konnte nicht gespeichert werden.',
-      );
-    } finally {
-      setJoining(false);
-    }
-  }
-
-  async function handleLeave() {
-    if (!activityId || leaving || joining || checkingJoinStatus) return;
-
-    setJoinError(null);
-    setLeaving(true);
-
-    try {
-      await leaveActivity(activityId);
-      setJoined(false);
-      setActivity((current) =>
-        current
-          ? {
-              ...current,
-              isJoined: false,
-              participantsCount: Math.max((current.participantsCount ?? 1) - 1, 0),
-            }
-          : current,
-      );
-      setChatError(null);
-    } catch (nextError) {
-      setJoinError(
-        nextError instanceof Error ? nextError.message : 'Teilnahme konnte nicht entfernt werden.',
-      );
-    } finally {
-      setLeaving(false);
     }
   }
 
@@ -441,7 +315,22 @@ export default function ActivityDetailPage() {
 
                       <Pressable
                         onPress={() => {
-                          handleLeave().catch(() => {});
+                          handleLeave().then((result) => {
+                            if (!result) return;
+                            setActivity((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    isJoined: result.isJoined,
+                                    participantsCount: applyParticipantCountDelta(
+                                      result.participantsCountDelta,
+                                      current.participantsCount,
+                                    ),
+                                  }
+                                : current,
+                            );
+                            setChatError(null);
+                          });
                         }}
                         disabled={leaving || openingChat}
                         className="self-start flex-row items-center justify-center rounded-full bg-app-dark-bg/70 px-2.5 py-1.5"
@@ -490,7 +379,21 @@ export default function ActivityDetailPage() {
 
                       <Pressable
                         onPress={() => {
-                          handleJoin().catch(() => {});
+                          handleJoin().then((result) => {
+                            if (!result) return;
+                            setActivity((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    isJoined: result.isJoined,
+                                    participantsCount: applyParticipantCountDelta(
+                                      result.participantsCountDelta,
+                                      current.participantsCount,
+                                    ),
+                                  }
+                                : current,
+                            );
+                          });
                         }}
                         disabled={joining || checkingJoinStatus}
                         className={`flex-row items-center justify-center rounded-full px-4 py-3 ${
