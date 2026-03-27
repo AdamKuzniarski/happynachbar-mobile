@@ -52,9 +52,17 @@ export default function MessageRoomPage() {
   const [editingText, setEditingText] = useState('');
 
   const socketRef = useRef<Socket | null>(null);
+  const listRef = useRef<FlatList<RoomMessage> | null>(null);
   const hasLoadedInitialRef = useRef(false);
+  const hasScrolledInitiallyRef = useRef(false);
   const readInFlightRef = useRef(false);
   const pendingSendTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const scrollToLatest = useCallback((animated = true) => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated });
+    });
+  }, []);
 
   useEffect(() => {
     getMe()
@@ -64,6 +72,7 @@ export default function MessageRoomPage() {
 
   useEffect(() => {
     let active = true;
+    hasScrolledInitiallyRef.current = false;
 
     async function loadRoom() {
       if (!conversationId) {
@@ -108,6 +117,15 @@ export default function MessageRoomPage() {
       active = false;
     };
   }, [conversationId]);
+
+  useEffect(() => {
+    if (loading || hasScrolledInitiallyRef.current) {
+      return;
+    }
+
+    hasScrolledInitiallyRef.current = true;
+    scrollToLatest(false);
+  }, [items.length, loading, scrollToLatest]);
 
   const markReadBestEffort = useCallback(async () => {
     if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current) {
@@ -208,6 +226,7 @@ export default function MessageRoomPage() {
           setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
         }
 
+        scrollToLatest();
         emitChatEvent('chat:message:new', { conversationId });
         markReadBestEffort().catch(() => {});
       };
@@ -265,7 +284,7 @@ export default function MessageRoomPage() {
       socketRef.current = null;
       setSocketConnected(false);
     };
-  }, [conversationId, currentUserId, markReadBestEffort]);
+  }, [conversationId, currentUserId, markReadBestEffort, scrollToLatest]);
 
   async function loadOlderMessages() {
     if (!conversationId || !nextCursor || loading || loadingOlder) {
@@ -319,6 +338,7 @@ export default function MessageRoomPage() {
     setText('');
     setSendError(null);
     setActionError(null);
+    scrollToLatest();
     emitSendMessage(socket, conversationId, body);
 
     const timeoutId = setTimeout(() => {
@@ -421,6 +441,7 @@ export default function MessageRoomPage() {
             </View>
           ) : (
             <FlatList
+              ref={listRef}
               data={items}
               keyExtractor={(item) => item.id}
               inverted
@@ -428,7 +449,11 @@ export default function MessageRoomPage() {
               onEndReached={() => {
                 loadOlderMessages().catch(() => {});
               }}
-              maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
+              maintainVisibleContentPosition={{
+                minIndexForVisible: 0,
+                autoscrollToTopThreshold: 32,
+              }}
+              keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingBottom: 16, gap: 10, flexGrow: 1 }}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-10">
