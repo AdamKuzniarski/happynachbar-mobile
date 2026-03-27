@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { io, type Socket } from 'socket.io-client';
+import { API_BASE_URL } from '@/lib/api';
+import { getAuthToken } from '@/lib/auth-token';
 import { formatDate } from '@/lib/format';
-import {
-  getConversations,
-  getUnreadCount,
-  type ConversationListItem,
-} from '@/lib/chat';
+import { getConversations, getUnreadCount, type ConversationListItem } from '@/lib/chat';
 import { onChatEvent } from '@/lib/chat-events';
 
 function getConversationTitle(item: ConversationListItem) {
@@ -33,6 +32,9 @@ export default function MessagesPage() {
   const hasLoadedRef = useRef(false);
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
+  const socketRef = useRef<Socket | null>(null);
+  const conversationIdsRef = useRef<string[]>([]);
+  const joinedConversationIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
     return () => {
@@ -40,64 +42,118 @@ export default function MessagesPage() {
     };
   }, []);
 
-  async function loadInbox({ silent = false }: { silent?: boolean } = {}) {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
+  const joinConversationRooms = useCallback((conversationIds: string[]) => {
+    const socket = socketRef.current;
+    if (!socket?.connected) return;
 
-    if (!silent) {
-      setLoading(true);
+    for (const conversationId of conversationIds) {
+      if (!conversationId || joinedConversationIdsRef.current.has(conversationId)) continue;
+      joinedConversationIdsRef.current.add(conversationId);
+      socket.emit('chat:join', { conversationId });
     }
+  }, []);
 
-    setError(null);
+  const loadInbox = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
 
-    try {
-      const [conversations, unread] = await Promise.all([getConversations(), getUnreadCount()]);
-      if (!mountedRef.current || requestId !== requestIdRef.current) return;
-      setItems(conversations.items ?? []);
-      setUnreadCount(unread.count ?? 0);
-      hasLoadedRef.current = true;
-    } catch (nextError) {
-      if (!mountedRef.current || requestId !== requestIdRef.current) return;
-      setError(nextError instanceof Error ? nextError.message : 'Nachrichten konnten nicht geladen werden.');
-    } finally {
-      if (!mountedRef.current || requestId !== requestIdRef.current) return;
       if (!silent) {
-        setLoading(false);
+        setLoading(true);
       }
-      setRefreshing(false);
-    }
-  }
+
+      setError(null);
+
+      try {
+        const [conversations, unread] = await Promise.all([getConversations(), getUnreadCount()]);
+        if (!mountedRef.current || requestId !== requestIdRef.current) return;
+
+        const nextItems = conversations.items ?? [];
+        const conversationIds = nextItems.map((item) => item.id);
+
+        setItems(nextItems);
+        setUnreadCount(unread.count ?? 0);
+        conversationIdsRef.current = conversationIds;
+        joinConversationRooms(conversationIds);
+        hasLoadedRef.current = true;
+      } catch (nextError) {
+        if (!mountedRef.current || requestId !== requestIdRef.current) return;
+        setError(
+          nextError instanceof Error
+            ? nextError.message
+            : 'Nachrichten konnten nicht geladen werden.',
+        );
+      } finally {
+        if (!mountedRef.current || requestId !== requestIdRef.current) return;
+        if (!silent) {
+          setLoading(false);
+        }
+        setRefreshing(false);
+      }
+    },
+    [joinConversationRooms],
+  );
 
   useEffect(() => {
     if (!isFocused) return;
     loadInbox({ silent: hasLoadedRef.current }).catch(() => {});
-  }, [isFocused]);
+  }, [isFocused, loadInbox]);
 
   useEffect(() => {
-    const unsubRefresh = onChatEvent('chat:refresh', () => {
+    let cancelled = false;
+
+    async function connectInboxSocket() {
+      const token = await getAuthToken();
+      if (cancelled) return;
+
+      const socket = io(`${API_BASE_URL}/chat`, {
+        withCredentials: true,
+        auth: token ? { token } : undefined,
+      });
+
+      const handleConnect = () => {
+        joinedConversationIdsRef.current.clear();
+        joinConversationRooms(conversationIdsRef.current);
+      };
+
+      const handleMessageChange = () => {
+        loadInbox({ silent: true }).catch(() => {});
+      };
+      const messageEvents = ['message:new', 'message:updated', 'message:deleted'] as const;
+
+      socket.on('connect', handleConnect);
+      messageEvents.forEach((eventName) => socket.on(eventName, handleMessageChange));
+      socketRef.current = socket;
+    }
+
+    connectInboxSocket().catch(() => {});
+
+    return () => {
+      cancelled = true;
+      joinedConversationIdsRef.current.clear();
+      const socket = socketRef.current;
+      if (!socket) return;
+      socket.off('connect');
+      ['message:new', 'message:updated', 'message:deleted'].forEach((eventName) =>
+        socket.off(eventName),
+      );
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [joinConversationRooms, loadInbox]);
+
+  useEffect(() => {
+    const refresh = () => {
       loadInbox({ silent: true }).catch(() => {});
-    });
-    const unsubRead = onChatEvent('chat:read', () => {
-      loadInbox({ silent: true }).catch(() => {});
-    });
-    const unsubNew = onChatEvent('chat:message:new', () => {
-      loadInbox({ silent: true }).catch(() => {});
-    });
-    const unsubUpdated = onChatEvent('chat:message:updated', () => {
-      loadInbox({ silent: true }).catch(() => {});
-    });
-    const unsubDeleted = onChatEvent('chat:message:deleted', () => {
-      loadInbox({ silent: true }).catch(() => {});
-    });
+    };
+    const unsubRefresh = onChatEvent('chat:refresh', refresh);
+    const unsubRead = onChatEvent('chat:read', refresh);
 
     return () => {
       unsubRefresh();
       unsubRead();
-      unsubNew();
-      unsubUpdated();
-      unsubDeleted();
     };
-  }, []);
+  }, [loadInbox]);
 
   function onRefresh() {
     setRefreshing(true);
@@ -155,7 +211,9 @@ export default function MessagesPage() {
                   {getConversationTitle(item)}
                 </Text>
                 {item.lastMessageAt ? (
-                  <Text className="text-xs text-app-dark-brand">{formatDate(item.lastMessageAt)}</Text>
+                  <Text className="text-xs text-app-dark-brand">
+                    {formatDate(item.lastMessageAt)}
+                  </Text>
                 ) : null}
               </View>
 

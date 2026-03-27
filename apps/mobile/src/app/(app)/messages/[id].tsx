@@ -1,76 +1,43 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  AppState,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { AppState, FlatList, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { io, type Socket } from 'socket.io-client';
+import { ChatComposer } from '@/components/chat/ChatComposer';
+import { ChatMessageBubble } from '@/components/chat/ChatMessageBubble';
+import { ChatRoomHeader } from '@/components/chat/ChatRoomHeader';
 import { API_BASE_URL } from '@/lib/api';
 import { getAuthToken } from '@/lib/auth-token';
+import {
+  createLocalId,
+  getConversationSubtitle,
+  getConversationTitle,
+  getSocketErrorText,
+  mergeMessages,
+  sortMessagesDesc,
+  type RoomMessage,
+  upsertMessage,
+} from '@/lib/chat-room';
 import { emitChatEvent } from '@/lib/chat-events';
 import {
   emitDeleteMessage,
   emitEditMessage,
   emitSendMessage,
+  getConversation,
   getConversationMessages,
   markConversationAsRead,
+  type ConversationListItem,
   type Message,
 } from '@/lib/chat';
-import { formatDate } from '@/lib/format';
 import { getMe } from '@/lib/users';
-
-type RoomMessage = Message & {
-  localId?: string;
-  optimistic?: boolean;
-};
-
-function sortMessagesDesc(messages: RoomMessage[]) {
-  return messages
-    .slice()
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
-}
-
-function mergeMessages(messages: RoomMessage[]) {
-  const byId = new Map<string, RoomMessage>();
-
-  for (const message of messages) {
-    byId.set(message.id, message);
-  }
-
-  return sortMessagesDesc(Array.from(byId.values()));
-}
-
-function upsertMessage(items: RoomMessage[], message: RoomMessage) {
-  return mergeMessages([...items, message]);
-}
-
-function getSocketErrorText(error: unknown) {
-  if (error && typeof error === 'object' && 'message' in error) {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === 'string' && message.trim().length > 0) {
-      return message;
-    }
-  }
-
-  return 'Socket-Verbindung fehlgeschlagen. Bitte API/Token prüfen.';
-}
-
-function createLocalId() {
-  return `local:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`;
-}
 
 export default function MessageRoomPage() {
   const params = useLocalSearchParams<{ id?: string }>();
   const conversationId = typeof params.id === 'string' ? params.id : '';
   const isFocused = useIsFocused();
+
+  const [conversation, setConversation] = useState<ConversationListItem | null>(null);
   const [items, setItems] = useState<RoomMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -83,35 +50,22 @@ export default function MessageRoomPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
+
   const socketRef = useRef<Socket | null>(null);
   const hasLoadedInitialRef = useRef(false);
   const readInFlightRef = useRef(false);
-  const pendingSendTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-    new Map(),
-  );
+  const pendingSendTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
-    let cancelled = false;
-
     getMe()
-      .then((me) => {
-        if (cancelled) return;
-        setCurrentUserId(me.id);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setCurrentUserId(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .then((me) => setCurrentUserId(me.id))
+      .catch(() => setCurrentUserId(null));
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
 
-    async function loadInitialMessages() {
+    async function loadRoom() {
       if (!conversationId) {
         setError('Ungültige Conversation-ID.');
         setLoading(false);
@@ -120,39 +74,53 @@ export default function MessageRoomPage() {
 
       setLoading(true);
       setError(null);
+      setActionError(null);
 
       try {
-        const response = await getConversationMessages(conversationId);
-        if (cancelled) return;
+        const [messagesResponse, conversationResponse] = await Promise.all([
+          getConversationMessages(conversationId),
+          getConversation(conversationId).catch(() => null),
+        ]);
 
-        const latestFirst = (response.items ?? []) as RoomMessage[];
-        setItems(sortMessagesDesc(latestFirst));
-        setNextCursor(response.nextCursor ?? null);
+        if (!active) return;
+
+        setItems(sortMessagesDesc((messagesResponse.items ?? []) as RoomMessage[]));
+        setNextCursor(messagesResponse.nextCursor ?? null);
+        setConversation(conversationResponse);
         hasLoadedInitialRef.current = true;
       } catch (nextError) {
-        if (cancelled) return;
-        setError(nextError instanceof Error ? nextError.message : 'Nachrichten konnten nicht geladen werden.');
+        if (!active) return;
+        setError(
+          nextError instanceof Error
+            ? nextError.message
+            : 'Nachrichten konnten nicht geladen werden.',
+        );
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
-    loadInitialMessages().catch(() => {});
+    loadRoom().catch(() => {});
 
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [conversationId]);
 
   const markReadBestEffort = useCallback(async () => {
-    if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current) return;
+    if (!conversationId || !isFocused || !hasLoadedInitialRef.current || readInFlightRef.current) {
+      return;
+    }
+
     readInFlightRef.current = true;
+
     try {
       await markConversationAsRead(conversationId);
       emitChatEvent('chat:read', { conversationId });
     } catch {
-      // Best effort.
+      // best effort
     } finally {
       readInFlightRef.current = false;
     }
@@ -160,11 +128,11 @@ export default function MessageRoomPage() {
 
   useEffect(() => {
     markReadBestEffort().catch(() => {});
-  }, [isFocused, conversationId, loading, markReadBestEffort]);
+  }, [loading, markReadBestEffort]);
 
   useEffect(() => {
     let disposed = false;
-    const pendingTimeoutMap = pendingSendTimeoutsRef.current;
+    const pendingTimeouts = pendingSendTimeoutsRef.current;
 
     async function connectSocket() {
       if (!conversationId) return;
@@ -177,71 +145,84 @@ export default function MessageRoomPage() {
         auth: token ? { token } : undefined,
       });
 
-      function handleConnect() {
-        setSocketConnected(true);
-        setSendError(null);
-        socket.emit('chat:join', { conversationId });
-      }
+      const replaceOptimisticMessage = (nextMessage: Message) => {
+        if (!currentUserId || nextMessage.senderId !== currentUserId) {
+          return false;
+        }
 
-      function handleDisconnect() {
-        setSocketConnected(false);
-      }
-
-      function handleConnectError(nextError: unknown) {
-        setSocketConnected(false);
-        setSendError(getSocketErrorText(nextError));
-      }
-
-      function consumeOptimisticIfMatching(nextMessage: Message) {
-        if (!currentUserId || nextMessage.senderId !== currentUserId) return false;
         const incomingBody = (nextMessage.body ?? '').trim();
-        if (!incomingBody) return false;
+        if (!incomingBody) {
+          return false;
+        }
 
         let matchedLocalId: string | null = null;
 
         setItems((prev) => {
-          for (const item of prev) {
-            if (!item.optimistic) continue;
-            if ((item.body ?? '').trim() !== incomingBody) continue;
-            matchedLocalId = item.localId ?? null;
-            return mergeMessages([
-              ...prev.filter((row) => row.id !== item.id),
-              nextMessage as RoomMessage,
-            ]);
+          const optimisticItem = prev.find(
+            (item) => item.optimistic && (item.body ?? '').trim() === incomingBody,
+          );
+
+          if (!optimisticItem) {
+            return prev;
           }
 
-          return upsertMessage(prev, nextMessage as RoomMessage);
+          matchedLocalId = optimisticItem.localId ?? null;
+
+          return mergeMessages([
+            ...prev.filter((item) => item.id !== optimisticItem.id),
+            nextMessage as RoomMessage,
+          ]);
         });
 
         if (matchedLocalId) {
-          const timeoutId = pendingTimeoutMap.get(matchedLocalId);
+          const timeoutId = pendingTimeouts.get(matchedLocalId);
           if (timeoutId) {
             clearTimeout(timeoutId);
-            pendingTimeoutMap.delete(matchedLocalId);
+            pendingTimeouts.delete(matchedLocalId);
           }
         }
 
         return !!matchedLocalId;
-      }
+      };
 
-      function handleMessageNew(nextMessage: Message) {
+      const handleConnect = () => {
+        setSocketConnected(true);
+        setSendError(null);
+        socket.emit('chat:join', { conversationId });
+      };
+
+      const handleDisconnect = () => {
+        setSocketConnected(false);
+      };
+
+      const handleConnectError = (nextError: unknown) => {
+        setSocketConnected(false);
+        setSendError(getSocketErrorText(nextError));
+      };
+
+      const handleMessageNew = (nextMessage: Message) => {
         if (nextMessage.conversationId !== conversationId) return;
-        consumeOptimisticIfMatching(nextMessage);
+
+        const replaced = replaceOptimisticMessage(nextMessage);
+        if (!replaced) {
+          setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
+        }
+
         emitChatEvent('chat:message:new', { conversationId });
         markReadBestEffort().catch(() => {});
-      }
+      };
 
-      function handleMessageUpdated(nextMessage: Message) {
+      const handleMessageUpdated = (nextMessage: Message) => {
         if (nextMessage.conversationId !== conversationId) return;
         setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
         emitChatEvent('chat:message:updated', { conversationId });
-      }
+      };
 
-      function handleMessageDeleted(nextMessage: Message) {
+      const handleMessageDeleted = (nextMessage: Message) => {
         if (nextMessage.conversationId !== conversationId) return;
         setItems((prev) => upsertMessage(prev, nextMessage as RoomMessage));
         emitChatEvent('chat:message:deleted', { conversationId });
-      }
+      };
 
       socket.on('connect', handleConnect);
       socket.on('disconnect', handleDisconnect);
@@ -255,23 +236,20 @@ export default function MessageRoomPage() {
 
     connectSocket().catch(() => {});
 
-    const appStateSub = AppState.addEventListener('change', (nextState) => {
-      const socket = socketRef.current;
-      if (!socket) return;
-
-      if (nextState === 'active' && !socket.connected) {
-        socket.connect();
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && socketRef.current && !socketRef.current.connected) {
+        socketRef.current.connect();
       }
     });
 
     return () => {
       disposed = true;
-      appStateSub.remove();
+      appStateSubscription.remove();
 
-      for (const timeoutId of pendingTimeoutMap.values()) {
+      for (const timeoutId of pendingTimeouts.values()) {
         clearTimeout(timeoutId);
       }
-      pendingTimeoutMap.clear();
+      pendingTimeouts.clear();
 
       const socket = socketRef.current;
       if (!socket) return;
@@ -287,17 +265,18 @@ export default function MessageRoomPage() {
       socketRef.current = null;
       setSocketConnected(false);
     };
-  }, [conversationId, currentUserId, isFocused, markReadBestEffort]);
+  }, [conversationId, currentUserId, markReadBestEffort]);
 
   async function loadOlderMessages() {
-    if (!conversationId || !nextCursor || loadingOlder || loading) return;
+    if (!conversationId || !nextCursor || loading || loadingOlder) {
+      return;
+    }
 
     setLoadingOlder(true);
 
     try {
       const response = await getConversationMessages(conversationId, { cursor: nextCursor });
-      const olderPage = (response.items ?? []) as RoomMessage[];
-      setItems((prev) => mergeMessages([...prev, ...olderPage]));
+      setItems((prev) => mergeMessages([...prev, ...((response.items ?? []) as RoomMessage[])]));
       setNextCursor(response.nextCursor ?? null);
     } catch {
       setActionError('Ältere Nachrichten konnten nicht geladen werden.');
@@ -308,6 +287,8 @@ export default function MessageRoomPage() {
 
   function onSendMessage() {
     const body = text.trim();
+    const socket = socketRef.current;
+
     if (!body) return;
 
     if (!conversationId) {
@@ -315,8 +296,7 @@ export default function MessageRoomPage() {
       return;
     }
 
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
+    if (!socket?.connected) {
       setSendError('Chat ist gerade offline. Bitte kurz erneut versuchen.');
       return;
     }
@@ -336,9 +316,9 @@ export default function MessageRoomPage() {
     };
 
     setItems((prev) => upsertMessage(prev, optimisticMessage));
+    setText('');
     setSendError(null);
     setActionError(null);
-    setText('');
     emitSendMessage(socket, conversationId, body);
 
     const timeoutId = setTimeout(() => {
@@ -364,10 +344,11 @@ export default function MessageRoomPage() {
 
   function submitEdit(messageId: string) {
     const body = editingText.trim();
+    const socket = socketRef.current;
+
     if (!body) return;
 
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
+    if (!socket?.connected) {
       setActionError('Bearbeiten fehlgeschlagen: Chat ist offline.');
       return;
     }
@@ -390,7 +371,8 @@ export default function MessageRoomPage() {
 
   function submitDelete(messageId: string) {
     const socket = socketRef.current;
-    if (!socket || !socket.connected) {
+
+    if (!socket?.connected) {
       setActionError('Löschen fehlgeschlagen: Chat ist offline.');
       return;
     }
@@ -408,6 +390,7 @@ export default function MessageRoomPage() {
     );
     emitDeleteMessage(socket, messageId);
     emitChatEvent('chat:message:deleted', { conversationId });
+
     if (editingId === messageId) {
       cancelEdit();
     }
@@ -416,17 +399,17 @@ export default function MessageRoomPage() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+
       <SafeAreaView className="flex-1 bg-app-dark-bg">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View className="px-4 pb-3 pt-4">
-            <Text className="text-lg font-bold text-app-dark-text">Chat</Text>
-            <Text className="mt-1 text-xs text-app-dark-brand">
-              {socketConnected ? 'Verbunden' : 'Offline'}
-            </Text>
-          </View>
+          <ChatRoomHeader
+            title={getConversationTitle(conversation)}
+            subtitle={getConversationSubtitle(conversation) ?? undefined}
+            isOnline={socketConnected}
+          />
 
           {loading ? (
             <View className="flex-1 items-center justify-center px-6">
@@ -446,12 +429,7 @@ export default function MessageRoomPage() {
                 loadOlderMessages().catch(() => {});
               }}
               maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingBottom: 16,
-                gap: 10,
-                flexGrow: 1,
-              }}
+              contentContainerStyle={{ paddingBottom: 16, gap: 10, flexGrow: 1 }}
               ListEmptyComponent={
                 <View className="flex-1 items-center justify-center py-10">
                   <Text className="text-center text-base text-app-dark-brand">
@@ -461,112 +439,43 @@ export default function MessageRoomPage() {
               }
               ListFooterComponent={
                 loadingOlder ? (
-                  <Text className="pt-2 text-center text-xs text-app-dark-brand">
+                  <Text className="px-4 pt-2 text-center text-xs text-app-dark-brand">
                     Ältere Nachrichten werden geladen...
                   </Text>
                 ) : null
               }
               renderItem={({ item }) => {
                 const isMine = !!currentUserId && item.senderId === currentUserId;
-                const isEditing = editingId === item.id;
 
                 return (
-                  <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-3">
-                    <Text className="text-xs text-app-dark-brand">
-                      {isMine ? 'Du' : item.senderDisplayName?.trim() || 'Nachbar'} ·{' '}
-                      {formatDate(item.createdAt)}
-                    </Text>
-
-                    {isEditing ? (
-                      <View className="mt-2 gap-2">
-                        <TextInput
-                          value={editingText}
-                          onChangeText={setEditingText}
-                          placeholder="Nachricht bearbeiten..."
-                          placeholderTextColor="#B8C3AF"
-                          className="h-11 rounded-md border border-app-dark-card bg-app-dark-bg px-3 text-base text-app-dark-text"
-                        />
-                        <View className="flex-row gap-2">
-                          <Pressable
-                            onPress={() => submitEdit(item.id)}
-                            className="h-9 min-w-[80px] items-center justify-center rounded-md bg-app-dark-accent px-3"
-                          >
-                            <Text className="text-xs font-semibold text-app-dark-text">Speichern</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={cancelEdit}
-                            className="h-9 min-w-[80px] items-center justify-center rounded-md border border-app-dark-card px-3"
-                          >
-                            <Text className="text-xs font-semibold text-app-dark-text">Abbrechen</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : (
-                      <>
-                        <Text className="mt-1 text-sm text-app-dark-text">
-                          {item.deletedAt ? 'Nachricht gelöscht' : item.body || '—'}
-                        </Text>
-
-                        <View className="mt-1 flex-row items-center gap-2">
-                          {item.editedAt && !item.deletedAt ? (
-                            <Text className="text-xs italic text-app-dark-brand">Bearbeitet</Text>
-                          ) : null}
-                          {item.optimistic ? (
-                            <Text className="text-xs italic text-app-dark-brand">Wird gesendet…</Text>
-                          ) : null}
-                        </View>
-                      </>
-                    )}
-
-                    {isMine && !item.deletedAt && !item.optimistic && !isEditing ? (
-                      <View className="mt-2 flex-row gap-2">
-                        <Pressable
-                          onPress={() => startEdit(item)}
-                          className="h-8 min-w-[70px] items-center justify-center rounded-md border border-app-dark-card px-2"
-                        >
-                          <Text className="text-xs text-app-dark-text">Bearbeiten</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => submitDelete(item.id)}
-                          className="h-8 min-w-[70px] items-center justify-center rounded-md border border-red-500/60 px-2"
-                        >
-                          <Text className="text-xs text-red-300">Löschen</Text>
-                        </Pressable>
-                      </View>
-                    ) : null}
-                  </View>
+                  <ChatMessageBubble
+                    item={item}
+                    isMine={isMine}
+                    isEditing={editingId === item.id}
+                    editingText={editingText}
+                    onChangeEditingText={setEditingText}
+                    onStartEdit={() => startEdit(item)}
+                    onCancelEdit={cancelEdit}
+                    onSubmitEdit={() => submitEdit(item.id)}
+                    onDelete={() => submitDelete(item.id)}
+                  />
                 );
               }}
             />
           )}
 
-          <View className="border-t border-app-dark-card px-4 pb-4 pt-3">
-            {sendError ? <Text className="mb-2 text-sm text-red-300">{sendError}</Text> : null}
-            {actionError ? <Text className="mb-2 text-sm text-red-300">{actionError}</Text> : null}
-            <View className="flex-row items-center gap-2">
-              <TextInput
-                value={text}
-                onChangeText={(nextValue) => {
-                  setText(nextValue);
-                  if (sendError) {
-                    setSendError(null);
-                  }
-                }}
-                placeholder="Nachricht schreiben..."
-                placeholderTextColor="#B8C3AF"
-                className="h-11 flex-1 rounded-md border border-app-dark-card bg-app-dark-bg px-3 text-base text-app-dark-text"
-              />
-              <Pressable
-                onPress={onSendMessage}
-                disabled={!text.trim()}
-                className={`h-11 min-w-[84px] items-center justify-center rounded-md px-3 ${
-                  text.trim() ? 'bg-app-dark-accent' : 'bg-app-dark-card'
-                }`}
-              >
-                <Text className="text-sm font-semibold text-app-dark-text">Senden</Text>
-              </Pressable>
-            </View>
-          </View>
+          <ChatComposer
+            value={text}
+            onChange={(nextValue) => {
+              setText(nextValue);
+              if (sendError) {
+                setSendError(null);
+              }
+            }}
+            onSend={onSendMessage}
+            sendError={sendError}
+            actionError={actionError}
+          />
         </KeyboardAvoidingView>
       </SafeAreaView>
     </>
