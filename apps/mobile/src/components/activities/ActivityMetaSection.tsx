@@ -22,16 +22,16 @@ export function ActivityMetaSection({
   return (
     <SectionCard>
       <View className="flex-row flex-wrap justify-center gap-2">
-        <InfoPill icon={<Ionicons name="calendar-outline" size={14} color="#B8C3AF" />}>
-          {formatDate(startAt)}
-        </InfoPill>
-
         <InfoPill icon={<Ionicons name="location-outline" size={14} color="#B8C3AF" />}>
           {plz || '—'}
         </InfoPill>
+
+        <InfoPill icon={<Ionicons name="calendar-outline" size={14} color="#B8C3AF" />}>
+          {formatDate(startAt)}
+        </InfoPill>
       </View>
 
-      <View className="mt-4 items-center gap-2">
+      <View className="mt-4 flex-row items-center justify-center gap-4">
         <View className="flex-row items-center gap-2">
           <Ionicons name="person-outline" size={13} color="#8F9B87" />
           <Text className="text-sm text-app-dark-brand">{creatorName}</Text>

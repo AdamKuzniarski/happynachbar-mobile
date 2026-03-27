@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { ApiError } from '@/lib/api';
@@ -18,6 +18,7 @@ type Props = {
 };
 
 export function useActivityDetailScreen({ activityId, onActivityLoaded }: Props) {
+  const onActivityLoadedRef = useRef<Props['onActivityLoaded']>(onActivityLoaded);
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
   const [viewerUserId, setViewerUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,10 @@ export function useActivityDetailScreen({ activityId, onActivityLoaded }: Props)
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    onActivityLoadedRef.current = onActivityLoaded;
+  }, [onActivityLoaded]);
 
   useEffect(() => {
     async function loadViewer() {
@@ -59,7 +64,7 @@ export function useActivityDetailScreen({ activityId, onActivityLoaded }: Props)
       try {
         const data = await getActivity(activityId);
         setActivity(data);
-        onActivityLoaded?.(data);
+        onActivityLoadedRef.current?.(data);
       } catch (err) {
         const apiError = err as ApiError;
 
@@ -76,7 +81,7 @@ export function useActivityDetailScreen({ activityId, onActivityLoaded }: Props)
     }
 
     run().catch(() => {});
-  }, [activityId, onActivityLoaded, reloadKey]);
+  }, [activityId, reloadKey]);
 
   async function handleUpdate(payload: ActivityWritePayload) {
     if (!activity) return;
@@ -88,7 +93,7 @@ export function useActivityDetailScreen({ activityId, onActivityLoaded }: Props)
       const updated = await updateActivity(activity.id, payload);
       setActivity(updated);
       setIsEditing(false);
-      onActivityLoaded?.(updated);
+      onActivityLoadedRef.current?.(updated);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Aktivität konnte nicht gespeichert werden.';

@@ -206,13 +206,6 @@ export default function ActivityDetailPage() {
                 currentImageIndex={currentImageIndex}
                 onGalleryScroll={handleGalleryScroll}
               />
-
-              {isOwner ? (
-                <ActivityOwnerActions
-                  onArchive={handleArchive}
-                  onEdit={() => setIsEditing((prev) => !prev)}
-                />
-              ) : null}
             </>
           ) : null}
 
@@ -473,6 +466,15 @@ export default function ActivityDetailPage() {
                       {openingChat ? 'Gruppenchat wird geöffnet...' : 'Gruppenchat öffnen'}
                     </Text>
                   </Pressable>
+                </View>
+              ) : null}
+
+              {isOwner ? (
+                <View className="items-end">
+                  <ActivityOwnerActions
+                    onArchive={handleArchive}
+                    onEdit={() => setIsEditing((prev) => !prev)}
+                  />
                 </View>
               ) : null}
             </>

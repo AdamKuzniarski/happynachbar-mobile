@@ -10,7 +10,7 @@ type Props = {
 
 export function ActivityOwnerActions({ onArchive, onEdit }: Props) {
   return (
-    <View className="flex-row items-center justify-between">
+    <View className="flex-row items-center gap-3">
       <IconActionButton onPress={onArchive}>
         <Ionicons name="trash-outline" size={16} color="#F3F6EE" />
       </IconActionButton>

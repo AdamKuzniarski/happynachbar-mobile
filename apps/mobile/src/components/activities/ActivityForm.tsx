@@ -242,7 +242,6 @@ export function ActivityForm({
   const initialStartAt = initialValues?.startAt;
   const initialImageUrlsSignature = (initialValues?.imageUrls ?? []).join('\n');
   const initialImageUrls = imageUrlsFromSignature(initialImageUrlsSignature);
-
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [plz, setPlz] = useState(initialPlz);
@@ -392,71 +391,18 @@ export function ActivityForm({
 
   return (
     <View className="gap-4">
-      <View className="gap-2">
+      <View className="gap-2 rounded-3xl bg-app-dark-card/80 p-4">
         <Text className="text-sm font-semibold text-app-dark-text">Titel</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
           placeholder="Was möchtest du veröffentlichen?"
           placeholderTextColor="#B8C3AF"
-          className="rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
+          className="rounded-2xl bg-app-dark-bg/80 px-4 py-3 text-base text-app-dark-text"
         />
       </View>
 
-      <View className="gap-2">
-        <Text className="text-sm font-semibold text-app-dark-text">PLZ</Text>
-        <TextInput
-          value={plz}
-          onChangeText={(value) => setPlz(normalizePostalCode(value))}
-          placeholder="63073"
-          placeholderTextColor="#B8C3AF"
-          keyboardType="number-pad"
-          className="rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
-        />
-      </View>
-
-      <View className="gap-2">
-        <Text className="text-sm font-semibold text-app-dark-text">Kategorie</Text>
-        <ActivityCategoryPicker value={category} onChange={setCategory} />
-      </View>
-
-      <View className="gap-2">
-        <Text className="text-sm font-semibold text-app-dark-text">Beschreibung</Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Füge eine kurze Beschreibung hinzu"
-          placeholderTextColor="#B8C3AF"
-          multiline
-          textAlignVertical="top"
-          className="min-h-32 rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
-        />
-      </View>
-
-      <View className="gap-2">
-        <Text className="text-sm font-semibold text-app-dark-text">Startzeit (optional)</Text>
-        <View className="flex-row gap-2">
-          <TextInput
-            value={startDateInput}
-            onChangeText={(value) => setStartDateInput(normalizeDateInput(value))}
-            placeholder="TT.MM.JJJJ"
-            placeholderTextColor="#B8C3AF"
-            keyboardType="number-pad"
-            className="flex-1 rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
-          />
-          <TextInput
-            value={startTimeInput}
-            onChangeText={(value) => setStartTimeInput(normalizeTimeInput(value))}
-            placeholder="HH:mm"
-            placeholderTextColor="#B8C3AF"
-            keyboardType="number-pad"
-            className="w-28 rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
-          />
-        </View>
-        <Text className="text-xs text-app-dark-brand">Optional, Format: TT.MM.JJJJ und HH:mm</Text>
-      </View>
-
-      <View className="gap-2">
+      <View className="gap-2 rounded-3xl bg-app-dark-card/80 p-4">
         <Text className="text-sm font-semibold text-app-dark-text">
           Bild-URLs (optional, max. {MAX_IMAGE_URLS})
         </Text>
@@ -470,12 +416,12 @@ export function ActivityForm({
             autoCapitalize="none"
             autoCorrect={false}
             onSubmitEditing={handleAddUrl}
-            className="flex-1 rounded-md border border-app-dark-card bg-app-dark-bg px-4 py-3 text-base text-app-dark-text"
+            className="flex-1 rounded-2xl bg-app-dark-bg/80 px-4 py-3 text-base text-app-dark-text"
           />
           <Pressable
             onPress={handleAddUrl}
             disabled={isResolvingUrl}
-            className="h-11 items-center justify-center rounded-md border border-app-dark-card px-3"
+            className="items-center justify-center rounded-full bg-app-dark-bg/80 px-3 py-2"
           >
             <Text className="text-sm font-semibold text-app-dark-text">
               {isResolvingUrl ? 'Prüfe...' : 'Hinzufügen'}
@@ -494,7 +440,7 @@ export function ActivityForm({
             {imageUrls.map((url, idx) => (
               <View
                 key={`${url}-${idx}`}
-                className="overflow-hidden rounded-md border border-app-dark-card bg-app-dark-bg"
+                className="overflow-hidden rounded-2xl bg-app-dark-bg/80"
               >
                 {failedPreviewUrls[url] ? (
                   <View className="h-28 items-center justify-center bg-app-dark-card px-3">
@@ -516,7 +462,7 @@ export function ActivityForm({
                   </Text>
                   <Pressable
                     onPress={() => handleRemoveImage(url, idx)}
-                    className="rounded-md border border-app-dark-card px-2 py-1"
+                    className="rounded-full bg-app-dark-card px-2.5 py-1.5"
                   >
                     <Text className="text-xs font-semibold text-app-dark-text">Entfernen</Text>
                   </Pressable>
@@ -527,13 +473,66 @@ export function ActivityForm({
         ) : null}
       </View>
 
+      <View className="gap-2 rounded-3xl bg-app-dark-card/80 p-4">
+        <Text className="text-sm font-semibold text-app-dark-text">PLZ</Text>
+        <TextInput
+          value={plz}
+          onChangeText={(value) => setPlz(normalizePostalCode(value))}
+          placeholder="63073"
+          placeholderTextColor="#B8C3AF"
+          keyboardType="number-pad"
+          className="rounded-2xl bg-app-dark-bg/80 px-4 py-3 text-base text-app-dark-text"
+        />
+      </View>
+
+      <View className="gap-2 rounded-3xl bg-app-dark-card/80 p-4">
+        <Text className="text-sm font-semibold text-app-dark-text">Kategorie</Text>
+        <ActivityCategoryPicker value={category} onChange={setCategory} />
+      </View>
+
+      <View className="gap-2 rounded-3xl bg-app-dark-card/80 p-4">
+        <Text className="text-sm font-semibold text-app-dark-text">Beschreibung</Text>
+        <TextInput
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Füge eine kurze Beschreibung hinzu"
+          placeholderTextColor="#B8C3AF"
+          multiline
+          textAlignVertical="top"
+          className="min-h-32 rounded-2xl bg-app-dark-bg/80 px-4 py-3 text-base text-app-dark-text"
+        />
+      </View>
+
+      <View className="gap-2 rounded-3xl bg-app-dark-card/80 p-4">
+        <Text className="text-sm font-semibold text-app-dark-text">Startzeit (optional)</Text>
+        <View className="flex-row gap-2">
+          <TextInput
+            value={startDateInput}
+            onChangeText={(value) => setStartDateInput(normalizeDateInput(value))}
+            placeholder="TT.MM.JJJJ"
+            placeholderTextColor="#B8C3AF"
+            keyboardType="number-pad"
+            className="flex-1 rounded-2xl bg-app-dark-bg/80 px-4 py-3 text-base text-app-dark-text"
+          />
+          <TextInput
+            value={startTimeInput}
+            onChangeText={(value) => setStartTimeInput(normalizeTimeInput(value))}
+            placeholder="HH:mm"
+            placeholderTextColor="#B8C3AF"
+            keyboardType="number-pad"
+            className="w-28 rounded-2xl bg-app-dark-bg/80 px-4 py-3 text-base text-app-dark-text"
+          />
+        </View>
+        <Text className="text-xs text-app-dark-brand">Optional, Format: TT.MM.JJJJ und HH:mm</Text>
+      </View>
+
       {formError ? <Text className="text-sm text-red-300">{formError}</Text> : null}
 
       <View className="gap-3 pt-2">
         <Pressable
           onPress={() => handleSubmit().catch(() => {})}
           disabled={!canSubmit}
-          className={`h-12 items-center justify-center rounded-md ${
+          className={`items-center justify-center rounded-full px-4 py-3 ${
             canSubmit ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
           }`}
         >
@@ -545,9 +544,9 @@ export function ActivityForm({
         {onCancel ? (
           <Pressable
             onPress={onCancel}
-            className="h-12 items-center justify-center rounded-md border border-app-dark-card"
+            className="items-center justify-center self-center rounded-full bg-app-dark-bg/80 px-4 py-2"
           >
-            <Text className="text-base font-semibold text-app-dark-text">Abbrechen</Text>
+            <Text className="text-sm font-semibold text-app-dark-text">Abbrechen</Text>
           </Pressable>
         ) : null}
       </View>
