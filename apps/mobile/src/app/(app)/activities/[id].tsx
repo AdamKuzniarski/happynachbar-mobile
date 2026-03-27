@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -19,21 +18,17 @@ import { ActivityHero } from '@/components/activities/ActivityHero';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
 import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActions';
 import { getAuthMe } from '@/lib/auth';
-import { ApiError } from '@/lib/api';
 import { openGroupConversation } from '@/lib/chat';
 import {
-  deleteActivity as archiveActivity,
-  getActivity,
   getActivityJoinStatus,
   joinActivity,
   leaveActivity,
   listActivityParticipants,
-  updateActivity,
   type ActivityParticipant,
-  type ActivityDetail,
   type ActivityWritePayload,
 } from '@/lib/activities';
 import { formatDate } from '@/lib/format';
+import { useActivityDetailScreen } from '@/lib/use-activity-detail-screen';
 
 function getInitials(name: string) {
   const trimmed = name.trim();
@@ -48,15 +43,6 @@ export default function ActivityDetailPage() {
   const activityId =
     typeof rawId === 'string' ? rawId : Array.isArray(rawId) && rawId.length > 0 ? rawId[0] : null;
 
-  const [activity, setActivity] = useState<ActivityDetail | null>(null);
-  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const [openingChat, setOpeningChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -70,66 +56,35 @@ export default function ActivityDetailPage() {
   const [participantsError, setParticipantsError] = useState<string | null>(null);
   const { width } = useWindowDimensions();
 
-  useEffect(() => {
-    async function loadViewer() {
-      try {
-        const me = await getAuthMe();
-        setViewerUserId(me.userId);
-      } catch {
-        setViewerUserId(null);
-      }
-    }
-
-    loadViewer().catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    async function run() {
-      if (!activityId) {
-        setActivity(null);
-        setError(null);
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      setNotFound(false);
-      setIsEditing(false);
+  const {
+    activity,
+    viewerUserId,
+    loading,
+    isEditing,
+    isSaving,
+    error,
+    notFound,
+    isOwner,
+    setError,
+    setIsEditing,
+    handleUpdate,
+    handleArchive,
+  } = useActivityDetailScreen({
+    activityId,
+    onActivityLoaded: (data) => {
       setJoinError(null);
       setChatError(null);
       setParticipants([]);
       setParticipantsError(null);
-
-      try {
-        const data = await getActivity(activityId);
-        setActivity(data);
-        setJoined(!!data.isJoined);
-      } catch (err) {
-        const apiError = err as ApiError;
-
-        setActivity(null);
-
-        if (apiError?.status === 404) {
-          setNotFound(true);
-        } else {
-          setError('Aktivität konnte nicht geladen werden.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    run().catch(() => {});
-  }, [activityId, reloadKey]);
+      setJoined(!!data.isJoined);
+    },
+  });
 
   const imageUrls = activity?.images?.map((image) => image.url).filter(Boolean) ?? [];
   const galleryImages =
     imageUrls.length > 0 ? imageUrls : activity?.thumbnailUrl ? [activity.thumbnailUrl] : [];
   const galleryImageWidth = Math.max(width - 32, 280);
   const creatorName = activity?.createdBy?.displayName?.trim() || 'Nachbar';
-  const isOwner = !!activity && !!viewerUserId && activity.createdById === viewerUserId;
 
   function handleGalleryScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     if (!galleryImages.length) return;
@@ -208,54 +163,6 @@ export default function ActivityDetailPage() {
       active = false;
     };
   }, [activityId, viewerUserId, isOwner]);
-
-  async function handleUpdate(payload: ActivityWritePayload) {
-    if (!activity) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const updated = await updateActivity(activity.id, payload);
-      setActivity(updated);
-      setIsEditing(false);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Aktivität konnte nicht gespeichert werden.';
-      setError(message);
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function handleArchive() {
-    if (!activity || isArchiving) return;
-
-    Alert.alert('Aktivität löschen?', 'Die Aktivität wird aus dem Feed entfernt.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      {
-        text: 'Löschen',
-        style: 'destructive',
-        onPress: () => {
-          setIsArchiving(true);
-          setError(null);
-
-          archiveActivity(activity.id)
-            .then(() => {
-              router.replace('/home');
-            })
-            .catch((err: unknown) => {
-              const message =
-                err instanceof Error ? err.message : 'Aktivität konnte nicht gelöscht werden.';
-              setError(message);
-            })
-            .finally(() => {
-              setIsArchiving(false);
-            });
-        },
-      },
-    ]);
-  }
 
   if (loading) {
     return (
