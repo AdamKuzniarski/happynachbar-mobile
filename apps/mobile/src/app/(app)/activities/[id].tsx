@@ -15,10 +15,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActivityDescriptionSection } from '@/components/activities/ActivityDescriptionSection';
+import { ActivityEditPanel } from '@/components/activities/ActivityEditPanel';
 import { ActivityHero } from '@/components/activities/ActivityHero';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
 import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActions';
-import { ActivityForm } from '@/components/activities/ActivityForm';
 import { getAuthMe } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
 import { openGroupConversation } from '@/lib/chat';
@@ -438,25 +438,12 @@ export default function ActivityDetailPage() {
           ) : null}
 
           {isOwner && isEditing ? (
-            <View className="rounded-md bg-app-dark-bg p-4">
-              <Text className="mb-4 text-center text-lg font-bold text-app-dark-text">
-                Aktivität bearbeiten
-              </Text>
-              <ActivityForm
-                initialValues={{
-                  title: activity.title,
-                  description: activity.description,
-                  plz: activity.plz,
-                  category: activity.category as ActivityWritePayload['category'],
-                  startAt: activity.startAt,
-                  imageUrls: activity.images?.map((image) => image.url) ?? [],
-                }}
-                submitLabel="Änderungen speichern"
-                isSubmitting={isSaving}
-                onSubmit={handleUpdate}
-                onCancel={() => setIsEditing(false)}
-              />
-            </View>
+            <ActivityEditPanel
+              activity={activity}
+              isSaving={isSaving}
+              onSubmit={handleUpdate}
+              onCancel={() => setIsEditing(false)}
+            />
           ) : null}
 
           {!isEditing ? (
