@@ -1,38 +1,50 @@
-type ChatEventName =
-  | 'chat:refresh'
-  | 'chat:read'
-  | 'chat:message:new'
-  | 'chat:message:updated'
-  | 'chat:message:deleted';
+import { AppState } from 'react-native';
+import { io, type Socket } from 'socket.io-client';
+import { API_BASE_URL } from '@/lib/api';
+import { getAuthToken } from '@/lib/auth-token';
+import type { Message } from '@/lib/chat';
 
-type ChatEventPayload = {
-  conversationId?: string;
+type Handlers = {
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onConnectError: (error: unknown) => void;
+  onMessageNew: (message: Message) => void;
+  onMessageUpdated: (message: Message) => void;
+  onMessageDeleted: (message: Message) => void;
 };
 
-type ChatEventListener = (payload: ChatEventPayload) => void;
+export async function connectChatRoomSocket(conversationId: string, handlers: Handlers) {
+  const token = await getAuthToken();
 
-const listeners = new Map<ChatEventName, Set<ChatEventListener>>();
+  const socket = io(`${API_BASE_URL}/chat`, {
+    withCredentials: true,
+    auth: token ? { token } : undefined,
+  });
 
-export function emitChatEvent(name: ChatEventName, payload: ChatEventPayload = {}) {
-  const group = listeners.get(name);
-  if (!group) return;
+  socket.on('connect', handlers.onConnect);
+  socket.on('disconnect', handlers.onDisconnect);
+  socket.on('connect_error', handlers.onConnectError);
+  socket.on('message:new', handlers.onMessageNew);
+  socket.on('message:updated', handlers.onMessageUpdated);
+  socket.on('message:deleted', handlers.onMessageDeleted);
 
-  for (const listener of group) {
-    listener(payload);
-  }
-}
-
-export function onChatEvent(name: ChatEventName, listener: ChatEventListener) {
-  const group = listeners.get(name) ?? new Set<ChatEventListener>();
-  group.add(listener);
-  listeners.set(name, group);
-
-  return () => {
-    const current = listeners.get(name);
-    if (!current) return;
-    current.delete(listener);
-    if (current.size === 0) {
-      listeners.delete(name);
+  const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+    if (nextState === 'active' && !socket.connected) {
+      socket.connect();
     }
+  });
+
+  return {
+    socket,
+    cleanup() {
+      appStateSubscription.remove();
+      socket.off('connect', handlers.onConnect);
+      socket.off('disconnect', handlers.onDisconnect);
+      socket.off('connect_error', handlers.onConnectError);
+      socket.off('message:new', handlers.onMessageNew);
+      socket.off('message:updated', handlers.onMessageUpdated);
+      socket.off('message:deleted', handlers.onMessageDeleted);
+      socket.disconnect();
+    },
   };
 }
