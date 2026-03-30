@@ -11,13 +11,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityEditPanel } from '@/components/activities/ActivityEditPanel';
+import { ActivityForm } from '@/components/activities/ActivityForm';
 import { ActivityHero } from '@/components/activities/ActivityHero';
 import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
 import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActions';
 import { SectionCard } from '@/components/ui/SectionCard';
 import { openGroupConversation } from '@/lib/chat';
 import { formatDate } from '@/lib/format';
+import type { ActivityWritePayload } from '@/lib/activities';
 import { useActivityParticipation } from '@/lib/use-activity-participation';
 import { useActivityDetailScreen } from '@/lib/use-activity-detail-screen';
 
@@ -210,12 +211,25 @@ export default function ActivityDetailPage() {
           ) : null}
 
           {isOwner && isEditing ? (
-            <ActivityEditPanel
-              activity={activity}
-              isSaving={isSaving}
-              onSubmit={handleUpdate}
-              onCancel={() => setIsEditing(false)}
-            />
+            <View className="rounded-md bg-app-dark-bg p-4">
+              <Text className="mb-4 text-center text-lg font-bold text-app-dark-text">
+                Aktivität bearbeiten
+              </Text>
+              <ActivityForm
+                initialValues={{
+                  title: activity.title,
+                  description: activity.description,
+                  plz: activity.plz,
+                  category: activity.category as ActivityWritePayload['category'],
+                  startAt: activity.startAt,
+                  imageUrls: activity.images?.map((image) => image.url) ?? [],
+                }}
+                submitLabel="Änderungen speichern"
+                isSubmitting={isSaving}
+                onSubmit={handleUpdate}
+                onCancel={() => setIsEditing(false)}
+              />
+            </View>
           ) : null}
 
           {!isEditing ? (

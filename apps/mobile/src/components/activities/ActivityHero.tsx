@@ -9,6 +9,14 @@ type Props = {
   onGalleryScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 };
 
+function CategoryBadge({ category }: { category?: string }) {
+  return (
+    <View className="absolute left-3 top-3 z-10 self-start rounded-full bg-app-dark-accent px-3 py-1">
+      <Text className="text-xs font-semibold text-[#203321]">{category || '—'}</Text>
+    </View>
+  );
+}
+
 export function ActivityHero({
   title,
   category,
@@ -23,9 +31,7 @@ export function ActivityHero({
 
       {galleryImages.length > 0 ? (
         <View className="gap-2">
-          <View className="absolute left-3 top-3 z-10 self-start rounded-full bg-app-dark-accent px-3 py-1">
-            <Text className="text-xs font-semibold text-[#203321]">{category || '—'}</Text>
-          </View>
+          <CategoryBadge category={category} />
           <ScrollView
             horizontal
             pagingEnabled
@@ -58,9 +64,7 @@ export function ActivityHero({
         </View>
       ) : (
         <View className={'h-64 w-full rounded-md bg-app-dark-card'}>
-          <View className="absolute left-3 top-3 z-10 self-start rounded-full bg-app-dark-accent px-3 py-1">
-            <Text className="text-xs font-semibold text-[#203321]">{category || '—'}</Text>
-          </View>
+          <CategoryBadge category={category} />
         </View>
       )}
     </>

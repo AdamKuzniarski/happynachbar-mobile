@@ -42,7 +42,15 @@
         }
       ],
       "expo-image",
-      "expo-web-browser"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Happy Nachbar braucht Zugriff auf deine Fotos, damit du Aktivitätsbilder auswählen kannst.",
+          "cameraPermission": "Happy Nachbar braucht Zugriff auf deine Kamera, damit du Aktivitätsbilder aufnehmen kannst."
+        }
+      ],
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
