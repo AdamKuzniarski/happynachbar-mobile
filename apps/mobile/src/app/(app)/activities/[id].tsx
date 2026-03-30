@@ -1,8 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
-  Alert,
-  Image,
   Pressable,
   ScrollView,
   Text,
@@ -12,19 +11,23 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { ActivityForm } from '@/components/activities/ActivityForm';
-import { getAuthMe } from '@/lib/auth';
-import { ApiError } from '@/lib/api';
+import { ActivityHero } from '@/components/activities/ActivityHero';
+import { ActivityMetaSection } from '@/components/activities/ActivityMetaSection';
+import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActions';
+import { SectionCard } from '@/components/ui/SectionCard';
 import { openGroupConversation } from '@/lib/chat';
-import {
-  deleteActivity as archiveActivity,
-  updateActivity,
-  getActivity,
-  type ActivityDetail,
-  type ActivityWritePayload,
-} from '@/lib/activities';
 import { formatDate } from '@/lib/format';
+import type { ActivityWritePayload } from '@/lib/activities';
+import { useActivityParticipation } from '@/lib/use-activity-participation';
+import { useActivityDetailScreen } from '@/lib/use-activity-detail-screen';
+
+function getInitials(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return '•';
+  const parts = trimmed.split(/\s+/).slice(0, 2);
+  return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || '•';
+}
 
 export default function ActivityDetailPage() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -32,75 +35,57 @@ export default function ActivityDetailPage() {
   const activityId =
     typeof rawId === 'string' ? rawId : Array.isArray(rawId) && rawId.length > 0 ? rawId[0] : null;
 
-  const [activity, setActivity] = useState<ActivityDetail | null>(null);
-  const [viewerUserId, setViewerUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const [openingChat, setOpeningChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { width } = useWindowDimensions();
 
-  useEffect(() => {
-    async function loadViewer() {
-      try {
-        const me = await getAuthMe();
-        setViewerUserId(me.userId);
-      } catch {
-        setViewerUserId(null);
-      }
-    }
-
-    loadViewer().catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    async function run() {
-      if (!activityId) {
-        setActivity(null);
-        setError(null);
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      setNotFound(false);
-      setIsEditing(false);
-
-      try {
-        const data = await getActivity(activityId);
-        setActivity(data);
-      } catch (err) {
-        const apiError = err as ApiError;
-
-        setActivity(null);
-
-        if (apiError?.status === 404) {
-          setNotFound(true);
-        } else {
-          setError('Aktivität konnte nicht geladen werden.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    run().catch(() => {});
-  }, [activityId, reloadKey]);
+  const {
+    activity,
+    setActivity,
+    viewerUserId,
+    loading,
+    isEditing,
+    isSaving,
+    error,
+    notFound,
+    isOwner,
+    setReloadKey,
+    setIsEditing,
+    handleUpdate,
+    handleArchive,
+  } = useActivityDetailScreen({
+    activityId,
+    onActivityLoaded: (data) => {
+      setChatError(null);
+      syncFromActivity(data);
+    },
+  });
+  const {
+    joined,
+    checkingJoinStatus,
+    joining,
+    leaving,
+    joinError,
+    participants,
+    participantsLoading,
+    participantsError,
+    syncFromActivity,
+    applyParticipantCountDelta,
+    handleJoin,
+    handleLeave,
+  } = useActivityParticipation({
+    activityId,
+    activity,
+    viewerUserId,
+    isOwner,
+  });
 
   const imageUrls = activity?.images?.map((image) => image.url).filter(Boolean) ?? [];
   const galleryImages =
     imageUrls.length > 0 ? imageUrls : activity?.thumbnailUrl ? [activity.thumbnailUrl] : [];
   const galleryImageWidth = Math.max(width - 32, 280);
   const creatorName = activity?.createdBy?.displayName?.trim() || 'Nachbar';
-  const isOwner = !!activity && !!viewerUserId && activity.createdById === viewerUserId;
 
   function handleGalleryScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     if (!galleryImages.length) return;
@@ -114,54 +99,6 @@ export default function ActivityDetailPage() {
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [activity?.id, galleryImages.length]);
-
-  async function handleUpdate(payload: ActivityWritePayload) {
-    if (!activity) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const updated = await updateActivity(activity.id, payload);
-      setActivity(updated);
-      setIsEditing(false);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Aktivität konnte nicht gespeichert werden.';
-      setError(message);
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function handleArchive() {
-    if (!activity || isArchiving) return;
-
-    Alert.alert('Aktivität löschen?', 'Die Aktivität wird aus dem Feed entfernt.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      {
-        text: 'Löschen',
-        style: 'destructive',
-        onPress: () => {
-          setIsArchiving(true);
-          setError(null);
-
-          archiveActivity(activity.id)
-            .then(() => {
-              router.replace('/home');
-            })
-            .catch((err: unknown) => {
-              const message =
-                err instanceof Error ? err.message : 'Aktivität konnte nicht gelöscht werden.';
-              setError(message);
-            })
-            .finally(() => {
-              setIsArchiving(false);
-            });
-        },
-      },
-    ]);
-  }
 
   if (loading) {
     return (
@@ -218,7 +155,7 @@ export default function ActivityDetailPage() {
   }
 
   async function onOpenGroupChat() {
-    if (!activityId || openingChat) return;
+    if (!activityId || openingChat || !canAccessGroupChat) return;
 
     setOpeningChat(true);
     setChatError(null);
@@ -240,82 +177,42 @@ export default function ActivityDetailPage() {
     }
   }
 
+  const canAccessGroupChat = isOwner || joined;
+  const participantsCount = activity.participantsCount ?? 0;
+  const previewParticipants = participants.slice(0, 3);
+
   return (
     <SafeAreaView className={'flex-1 bg-app-dark-bg'}>
       <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
         <View className={'gap-4'}>
           <Pressable
             onPress={() => router.back()}
-            className={'h-11 self-start rounded-md border border-app-dark-card px-4'}
+            className={'self-start flex-row rounded-md px-3 py-2'}
           >
-            <View className={'flex-1 items-center justify-center'}>
-              <Text className={'font-semibold text-app-dark-text'}>Zurück</Text>
+            <View className={'flex-row items-center gap-2'}>
+              <Ionicons name="arrow-back-outline" size={16} color="#F3F6EE" />
+              <Text className={'text-sm font-semibold text-app-dark-text'}>Zurück</Text>
             </View>
           </Pressable>
 
           {error ? <Text className="text-sm text-red-300">{error}</Text> : null}
 
-          {galleryImages.length > 0 ? (
-            <View className="gap-2">
-              <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={handleGalleryScroll}
-              >
-                {galleryImages.map((url, index) => (
-                  <View key={`${url}-${index}`} style={{ width: galleryImageWidth }}>
-                    <Image
-                      source={{ uri: url }}
-                      resizeMode={'cover'}
-                      className={'h-64 w-full rounded-md bg-app-dark-card'}
-                    />
-                  </View>
-                ))}
-              </ScrollView>
-
-              {galleryImages.length > 1 ? (
-                <View className="flex-row items-center justify-center gap-2">
-                  {galleryImages.map((_, index) => (
-                    <View
-                      key={`dot-${index}`}
-                      className={`h-2 w-2 rounded-full ${
-                        index === currentImageIndex ? 'bg-app-dark-accent' : 'bg-app-dark-card'
-                      }`}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          ) : (
-            <View className={'h-64 w-full rounded-md bg-app-dark-card'} />
-          )}
-
-          {isOwner ? (
-            <View className="flex-row gap-3">
-              <Pressable
-                onPress={() => setIsEditing((prev) => !prev)}
-                className="h-11 flex-1 items-center justify-center rounded-md bg-app-dark-accent px-4"
-              >
-                <Text className="font-semibold text-app-dark-text">
-                  {isEditing ? 'Bearbeiten schließen' : 'Bearbeiten'}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleArchive}
-                className="h-11 flex-1 items-center justify-center rounded-md border border-app-dark-card px-4"
-              >
-                <Text className="font-semibold text-app-dark-text">
-                  {isArchiving ? 'Wird gelöscht...' : 'Löschen'}
-                </Text>
-              </Pressable>
-            </View>
+          {!isEditing ? (
+            <>
+              <ActivityHero
+                title={activity.title}
+                category={activity.category || '—'}
+                galleryImages={galleryImages}
+                galleryImageWidth={galleryImageWidth}
+                currentImageIndex={currentImageIndex}
+                onGalleryScroll={handleGalleryScroll}
+              />
+            </>
           ) : null}
 
           {isOwner && isEditing ? (
-            <View className="rounded-md border border-app-dark-card bg-app-dark-bg p-4">
-              <Text className="mb-4 text-lg font-bold text-app-dark-text">
+            <View className="rounded-md bg-app-dark-bg p-4">
+              <Text className="mb-4 text-center text-lg font-bold text-app-dark-text">
                 Aktivität bearbeiten
               </Text>
               <ActivityForm
@@ -335,57 +232,267 @@ export default function ActivityDetailPage() {
             </View>
           ) : null}
 
-          <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
-            <Text className={'text-2xl font-bold text-app-dark-text'}>{activity.title}</Text>
+          {!isEditing ? (
+            <>
+              <ActivityMetaSection
+                startAt={activity.startAt}
+                plz={activity.plz}
+                creatorName={creatorName}
+                updatedAt={activity.updatedAt}
+                formatDate={formatDate}
+              />
 
-            <View className={'mt-4 gap-2'}>
-              <Text className={'text-sm text-app-dark-brand'}>
-                Kategorie: {activity.category || '—'}
-              </Text>
-            </View>
-            <View>
-              <Text className={'text-sm text-app-dark-brand'}>PLZ: {activity.plz || '—'}</Text>
-            </View>
-            <View>
-              <Text className={'text-sm text-app-dark-brand'}>Von: {creatorName}</Text>
-            </View>
-            <View>
-              <Text className={'text-sm text-app-dark-brand'}>
-                Start: {formatDate(activity.startAt)}
-              </Text>
-            </View>
-            <View>
-              <Text className={'text-sm text-app-dark-brand'}>
-                Aktualisiert: {formatDate(activity.updatedAt)}
-              </Text>
-            </View>
-          </View>
+              <SectionCard>
+                <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>
+                  Beschreibung
+                </Text>
 
-          <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
-            <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>Beschreibung</Text>
+                <Text className={'leading-6 text-app-dark-brand'}>
+                  {activity.description?.trim() || 'Keine Beschreibung vorhanden.'}
+                </Text>
+              </SectionCard>
 
-            <Text className={'leading-6 text-app-dark-brand'}>
-              {activity.description?.trim() || 'Keine Beschreibung vorhanden.'}
-            </Text>
-          </View>
+              {!isOwner ? (
+                <View className={'rounded-md bg-app-dark-bg p-4'}>
+                  <Text className={'mb-3 text-base font-semibold text-app-dark-text'}>
+                    Teilnahme
+                  </Text>
+                  {joinError ? (
+                    <Text className="mb-3 text-sm text-red-300">{joinError}</Text>
+                  ) : null}
 
-          <View className={'rounded-md border border-app-dark-card bg-app-dark-bg p-4'}>
-            <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>Chat</Text>
-            {chatError ? <Text className={'mb-2 text-sm text-red-300'}>{chatError}</Text> : null}
-            <Pressable
-              onPress={() => {
-                onOpenGroupChat().catch(() => {});
-              }}
-              disabled={openingChat}
-              className={`h-11 items-center justify-center rounded-md px-4 ${
-                openingChat ? 'bg-app-dark-card' : 'bg-app-dark-accent'
-              }`}
-            >
-              <Text className={'font-semibold text-app-dark-text'}>
-                {openingChat ? 'Gruppenchat wird geöffnet...' : 'Gruppenchat öffnen'}
-              </Text>
-            </Pressable>
-          </View>
+                  {joined ? (
+                    <View className="gap-3 rounded-3xl bg-app-dark-card/80 p-4">
+                      <View className="flex-row items-center gap-3">
+                        <View className="h-11 w-11 items-center justify-center rounded-full bg-app-dark-accent">
+                          <Ionicons name="checkmark" size={18} color="#203321" />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-sm font-semibold text-app-dark-text">
+                            Du nimmst teil
+                          </Text>
+                          <Text className="mt-1 text-xs text-app-dark-brand">
+                            Du bist in der Teilnehmerliste und hast Zugriff auf den Gruppenchat.
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View className="self-start flex-row items-center gap-2 rounded-full bg-app-dark-bg/70 px-3 py-2">
+                        <View className="flex-row">
+                          {Array.from({
+                            length: Math.min(
+                              Math.max(participantsCount, previewParticipants.length),
+                              3,
+                            ),
+                          }).map((_, index) => {
+                            const participant = previewParticipants[index];
+                            const label = participant?.displayName?.trim() || 'Nachbar';
+                            return (
+                              <View
+                                key={participant?.id ?? `joined-fallback-${index}`}
+                                className={`h-7 w-7 items-center justify-center rounded-full border border-app-dark-brand bg-app-dark-bg ${
+                                  index > 0 ? '-ml-2' : ''
+                                }`}
+                              >
+                                <Text className="text-[11px] font-semibold text-app-dark-text">
+                                  {participant ? getInitials(label) : '•'}
+                                </Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                        <Text className="text-sm font-semibold text-app-dark-text">
+                          {participantsCount} Teilnehmende
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        onPress={() => {
+                          onOpenGroupChat().catch(() => {});
+                        }}
+                        disabled={openingChat}
+                        className="self-end flex-row items-center justify-center rounded-full bg-app-dark-bg/70 px-3 py-2"
+                      >
+                        <Ionicons name="chatbubble-outline" size={13} color="#B8C3AF" />
+                        <Text className={'ml-1.5 text-xs font-semibold text-app-dark-text'}>
+                          {openingChat ? 'Gruppenchat wird geöffnet...' : 'Gruppenchat öffnen'}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => {
+                          handleLeave().then((result) => {
+                            if (!result) return;
+                            setActivity((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    isJoined: result.isJoined,
+                                    participantsCount: applyParticipantCountDelta(
+                                      result.participantsCountDelta,
+                                      current.participantsCount,
+                                    ),
+                                  }
+                                : current,
+                            );
+                            setChatError(null);
+                          });
+                        }}
+                        disabled={leaving || openingChat}
+                        className="self-start flex-row items-center justify-center rounded-full bg-app-dark-bg/70 px-2.5 py-1.5"
+                      >
+                        <Ionicons name="person-remove-outline" size={13} color="#F3F6EE" />
+                        <Text className="ml-1.5 text-xs font-semibold text-app-dark-text">
+                          {leaving ? 'Teilnahme wird beendet...' : 'Teilnahme verlassen'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View className="gap-3 rounded-3xl bg-app-dark-card/80 p-4">
+                      <Text className="text-sm leading-5 text-app-dark-brand">
+                        Mit einem Tap wirst du zur Aktivität hinzugefügt und kannst den Gruppenchat
+                        nutzen.
+                      </Text>
+
+                      <View className="self-start flex-row items-center gap-2 rounded-full bg-app-dark-bg/70 px-3 py-2">
+                        <View className="flex-row">
+                          {Array.from({
+                            length: Math.min(
+                              Math.max(participantsCount, previewParticipants.length),
+                              3,
+                            ),
+                          }).map((_, index) => {
+                            const participant = previewParticipants[index];
+                            const label = participant?.displayName?.trim() || 'Nachbar';
+                            return (
+                              <View
+                                key={participant?.id ?? `join-fallback-${index}`}
+                                className={`h-7 w-7 items-center justify-center rounded-full border border-app-dark-brand bg-app-dark-bg ${
+                                  index > 0 ? '-ml-2' : ''
+                                }`}
+                              >
+                                <Text className="text-[11px] font-semibold text-app-dark-text">
+                                  {participant ? getInitials(label) : '•'}
+                                </Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                        <Text className="text-sm font-semibold text-app-dark-text">
+                          {participantsCount} Teilnehmende
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        onPress={() => {
+                          handleJoin().then((result) => {
+                            if (!result) return;
+                            setActivity((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    isJoined: result.isJoined,
+                                    participantsCount: applyParticipantCountDelta(
+                                      result.participantsCountDelta,
+                                      current.participantsCount,
+                                    ),
+                                  }
+                                : current,
+                            );
+                          });
+                        }}
+                        disabled={joining || checkingJoinStatus}
+                        className={`flex-row items-center justify-center rounded-full px-4 py-3 ${
+                          joining || checkingJoinStatus ? 'bg-app-dark-bg/80' : 'bg-app-dark-accent'
+                        }`}
+                      >
+                        <Ionicons
+                          name="person-add-outline"
+                          size={18}
+                          color={joining || checkingJoinStatus ? '#B8C3AF' : '#203321'}
+                        />
+                        <Text className={'ml-2 font-semibold text-app-dark-text'}>
+                          {joining || checkingJoinStatus ? 'Lädt...' : 'Teilnehmen'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              ) : null}
+
+              {isOwner ? (
+                <View className={'rounded-md bg-app-dark-bg p-4'}>
+                  <Text className={'mb-3 text-base font-semibold text-app-dark-text'}>
+                    Teilnehmende
+                  </Text>
+
+                  {participantsError ? (
+                    <Text className="mb-2 text-sm text-red-300">{participantsError}</Text>
+                  ) : null}
+
+                  {participantsLoading ? (
+                    <Text className={'text-sm text-app-dark-brand'}>
+                      Teilnehmende werden geladen...
+                    </Text>
+                  ) : participants.length === 0 ? (
+                    <Text className={'text-sm text-app-dark-brand'}>Noch keine Teilnehmenden.</Text>
+                  ) : (
+                    <View className="gap-3">
+                      {participants.map((participant) => (
+                        <View
+                          key={participant.id}
+                          className="flex-row items-center gap-3 rounded-md bg-app-dark-card px-3 py-3"
+                        >
+                          <View className="h-9 w-9 items-center justify-center rounded-full border border-app-dark-brand">
+                            <Ionicons name="person-outline" size={18} color="#B8C3AF" />
+                          </View>
+                          <Text className="flex-1 text-sm font-medium text-app-dark-text">
+                            {participant.displayName?.trim() || 'Nachbar'}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ) : null}
+
+              {isOwner ? (
+                <View className={'rounded-md bg-app-dark-bg p-4'}>
+                  <Text className={'mb-2 text-base font-semibold text-app-dark-text'}>Chat</Text>
+                  {chatError ? (
+                    <Text className={'mb-2 text-sm text-red-300'}>{chatError}</Text>
+                  ) : null}
+                  <Pressable
+                    onPress={() => {
+                      onOpenGroupChat().catch(() => {});
+                    }}
+                    disabled={openingChat}
+                    className={`self-start flex-row items-center justify-center rounded-md px-3 py-2 ${
+                      openingChat ? 'bg-app-dark-card' : 'bg-app-dark-accent'
+                    }`}
+                  >
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={16}
+                      color={openingChat ? '#B8C3AF' : '#203321'}
+                    />
+                    <Text className={'ml-2 text-sm font-semibold text-app-dark-text'}>
+                      {openingChat ? 'Gruppenchat wird geöffnet...' : 'Gruppenchat öffnen'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {isOwner ? (
+                <View className="items-end">
+                  <ActivityOwnerActions
+                    onArchive={handleArchive}
+                    onEdit={() => setIsEditing((prev) => !prev)}
+                  />
+                </View>
+              ) : null}
+            </>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
