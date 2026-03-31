@@ -18,9 +18,15 @@ import { ActivityOwnerActions } from '@/components/activities/ActivityOwnerActio
 import { SectionCard } from '@/components/ui/SectionCard';
 import { openGroupConversation } from '@/lib/chat';
 import { formatDate } from '@/lib/format';
-import type { ActivityWritePayload } from '@/lib/activities';
+import {
+  getActivityLikeStatus,
+  likeActivity,
+  unlikeActivity,
+  type ActivityWritePayload,
+} from '@/lib/activities';
 import { useActivityParticipation } from '@/lib/use-activity-participation';
 import { useActivityDetailScreen } from '@/lib/use-activity-detail-screen';
+import { FavoriteButton } from '@/components/activities/FavoriteButton';
 
 function getInitials(name: string) {
   const trimmed = name.trim();
@@ -38,6 +44,8 @@ export default function ActivityDetailPage() {
   const [openingChat, setOpeningChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const { width } = useWindowDimensions();
 
   const {
@@ -96,9 +104,63 @@ export default function ActivityDetailPage() {
     setCurrentImageIndex(clampedIndex);
   }
 
+  async function handleToggleFavorite() {
+    if (!activityId || favoriteLoading) return;
+
+    const wasLiked = liked;
+
+    setFavoriteLoading(true);
+    setLiked(!wasLiked);
+
+    try {
+      if (wasLiked) {
+        await unlikeActivity(activityId);
+      } else {
+        await likeActivity(activityId);
+      }
+
+      setActivity((current) =>
+        current
+          ? {
+              ...current,
+              likesCount: Math.max((current.likesCount ?? 0) + (wasLiked ? -1 : 1), 0),
+              isLiked: !wasLiked,
+            }
+          : current,
+      );
+    } catch {
+      setLiked(wasLiked);
+    } finally {
+      setFavoriteLoading(false);
+    }
+  }
+
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [activity?.id, galleryImages.length]);
+
+  useEffect(() => {
+    if (!activityId) {
+      setLiked(false);
+      return;
+    }
+
+    let active = true;
+
+    getActivityLikeStatus(activityId)
+      .then((result) => {
+        if (!active) return;
+        setLiked(!!result.liked);
+      })
+      .catch(() => {
+        if (!active) return;
+        setLiked(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activityId]);
 
   if (loading) {
     return (
