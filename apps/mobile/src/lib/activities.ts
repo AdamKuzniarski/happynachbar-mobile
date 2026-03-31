@@ -17,6 +17,8 @@ export type Activity = {
   updatedAt?: string;
   createdBy?: { displayName?: string };
   participantsCount?: number;
+  likesCount?: number;
+  isLiked?: boolean;
 };
 
 export type ActivityDetail = Activity & {
@@ -69,7 +71,7 @@ export function listActivities(params: ListActivitiesParams = {}) {
   }
 
   const query = searchParams.toString();
-  return apiRequest<ListActivitiesResponse>(`/activities${query ? `?${query}` : ''}`);
+  return apiRequest<ListActivitiesResponse>(`/activities/favorites${query ? `?${query}` : ''}`);
 }
 
 export function getActivity(id: string) {
@@ -110,6 +112,18 @@ export function leaveActivity(id: string) {
 
 export function getActivityJoinStatus(id: string) {
   return apiRequest<{ joined: boolean }>(`/activities/${id}/joined`);
+}
+
+export function likeActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}/like`, {
+    method: 'POST',
+  });
+}
+
+export function unlikeActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}/like`, {
+    method: 'DELETE',
+  });
 }
 
 export function listActivityParticipants(id: string) {
