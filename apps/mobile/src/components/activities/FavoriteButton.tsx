@@ -7,7 +7,7 @@ type FavoriteButtonProps = {
   onPress: () => void;
 };
 
-export function FavortieButton({ liked, disabled = false, onPress }: FavoriteButtonProps) {
+export function FavoriteButton({ liked, disabled = false, onPress }: FavoriteButtonProps) {
   function handlePress(event: GestureResponderEvent) {
     event.stopPropagation();
     if (disabled) return;
