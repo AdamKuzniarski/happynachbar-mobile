@@ -33,6 +33,21 @@ export default function HomePage() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [favoriteBusyID, setFavoriteBusyID] = useState<string | null>(null);
 
+  async function loadLikedIdsForItems(nextItems: Activity[]) {
+    const likedResults = await Promise.all(
+      nextItems.map(async (item) => {
+        try {
+          const result = await getActivityLikeStatus(item.id);
+          return result.liked ? item.id : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    return new Set(likedResults.filter((value): value is string => !!value));
+  }
+
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
 
