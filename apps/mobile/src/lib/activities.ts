@@ -17,6 +17,8 @@ export type Activity = {
   updatedAt?: string;
   createdBy?: { displayName?: string };
   participantsCount?: number;
+  likesCount?: number;
+  isLiked?: boolean;
 };
 
 export type ActivityDetail = Activity & {
@@ -72,6 +74,25 @@ export function listActivities(params: ListActivitiesParams = {}) {
   return apiRequest<ListActivitiesResponse>(`/activities${query ? `?${query}` : ''}`);
 }
 
+export function listFavoriteActivities(params: ListActivitiesParams = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.cursor) {
+    searchParams.set('cursor', params.cursor);
+  }
+
+  if (params.category) {
+    searchParams.set('category', params.category);
+  }
+
+  if (params.q) {
+    searchParams.set('q', params.q);
+  }
+
+  const query = searchParams.toString();
+  return apiRequest<ListActivitiesResponse>(`/activities/favorites${query ? `?${query}` : ''}`);
+}
+
 export function getActivity(id: string) {
   return apiRequest<ActivityDetail>(`/activities/${id}`);
 }
@@ -110,6 +131,22 @@ export function leaveActivity(id: string) {
 
 export function getActivityJoinStatus(id: string) {
   return apiRequest<{ joined: boolean }>(`/activities/${id}/joined`);
+}
+
+export function likeActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}/like`, {
+    method: 'POST',
+  });
+}
+
+export function unlikeActivity(id: string) {
+  return apiRequest<{ ok: true }>(`/activities/${id}/like`, {
+    method: 'DELETE',
+  });
+}
+
+export function getActivityLikeStatus(id: string) {
+  return apiRequest<{ liked: boolean }>(`/activities/${id}/liked`);
 }
 
 export function listActivityParticipants(id: string) {

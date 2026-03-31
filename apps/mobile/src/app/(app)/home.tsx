@@ -4,10 +4,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { listActivities, type Activity } from '@/lib/activities';
+import {
+  listActivities,
+  getActivityLikeStatus,
+  likeActivity,
+  unlikeActivity,
+  type Activity,
+} from '@/lib/activities';
 import { formatDate } from '@/lib/format';
 import { ActivityCategory } from '@/lib/enums';
 import { HomeListHeader } from '@/components/home/HomeListHeader';
+import { FavoriteButton } from '@/components/activities/FavoriteButton';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -23,14 +30,71 @@ export default function HomePage() {
   const searchValueRef = useRef(searchValue);
   const [isCategoryVisible, setIsCategoryVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
+
+  async function loadLikedIdsForItems(nextItems: Activity[]) {
+    const likedResults = await Promise.all(
+      nextItems.map(async (item) => {
+        try {
+          const result = await getActivityLikeStatus(item.id);
+          return result.liked ? item.id : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    return new Set(likedResults.filter((value): value is string => !!value));
+  }
+
+  async function toggleFavorite(activityId: string) {
+    if (favoriteBusyId) return;
+
+    const wasLiked = likedIds.has(activityId);
+    setFavoriteBusyId(activityId);
+
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) {
+        next.delete(activityId);
+      } else {
+        next.add(activityId);
+      }
+      return next;
+    });
+
+    try {
+      if (wasLiked) {
+        await unlikeActivity(activityId);
+      } else {
+        await likeActivity(activityId);
+      }
+    } catch {
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) {
+          next.add(activityId);
+        } else {
+          next.delete(activityId);
+        }
+        return next;
+      });
+    } finally {
+      setFavoriteBusyId(null);
+    }
+  }
 
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
 
     try {
       const page = await listActivities({ category, q: search });
+      const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
+
       setItems(page.items ?? []);
       setNextCursor(page.nextCursor ?? null);
+      setLikedIds(nextLikedIds);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -44,8 +108,11 @@ export default function HomePage() {
 
     try {
       const page = await listActivities({ category: selectedCategory, q: searchValue });
+      const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
+
       setItems(page.items ?? []);
       setNextCursor(page.nextCursor ?? null);
+      setLikedIds(nextLikedIds);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -65,8 +132,16 @@ export default function HomePage() {
         q: searchValue,
       });
 
-      setItems((prev) => [...prev, ...(page.items ?? [])]);
+      const moreItems = page.items ?? [];
+      const moreLikedIds = await loadLikedIdsForItems(moreItems);
+
+      setItems((prev) => [...prev, ...moreItems]);
       setNextCursor(page.nextCursor ?? null);
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        moreLikedIds.forEach((id) => next.add(id));
+        return next;
+      });
     } catch {
       setError('Weitere Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -138,9 +213,11 @@ export default function HomePage() {
         category: selectedCategoryRef.current,
         q: searchValueRef.current,
       })
-        .then((page) => {
+        .then(async (page) => {
+          const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
           setItems(page.items ?? []);
           setNextCursor(page.nextCursor ?? null);
+          setLikedIds(nextLikedIds);
         })
         .catch(() => {
           setError('Aktivitäten konnten nicht geladen werden.');
@@ -154,22 +231,26 @@ export default function HomePage() {
   useEffect(() => {
     let cancelled = false;
 
-    // setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
 
     const timeout = setTimeout(async () => {
       try {
         const page = await listActivities({ category: selectedCategory, q: searchValue });
+        const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
+
         if (cancelled) return;
+
         setError(null);
         setItems(page.items ?? []);
         setNextCursor(page.nextCursor ?? null);
+        setLikedIds(nextLikedIds);
       } catch {
         if (cancelled) return;
         setError('Aktivitäten konnten nicht geladen werden.');
       } finally {
         if (cancelled) return;
+
         setLoading(false);
         setRefreshing(false);
       }
@@ -236,27 +317,32 @@ export default function HomePage() {
             </Text>
           </View>
         }
-        ListFooterComponent={
-          loadingMore ? (
-            <Text className="pb-3 pt-1 text-center text-xs text-app-dark-brand">
-              Weitere Aktivitäten werden geladen...
-            </Text>
-          ) : null
-        }
         renderItem={({ item }) => (
           <Pressable
             onPress={() => openActivityDetails(item.id)}
             className="rounded-md border border-app-dark-card bg-app-dark-bg p-4"
           >
-            {item.thumbnailUrl ? (
-              <Image
-                source={{ uri: item.thumbnailUrl }}
-                resizeMode="cover"
-                className="mb-3 h-44 w-full rounded-md bg-app-dark-card"
-              />
-            ) : (
-              <View className="mb-3 h-44 w-full rounded-md bg-app-dark-card" />
-            )}
+            <View className="relative">
+              {item.thumbnailUrl ? (
+                <Image
+                  source={{ uri: item.thumbnailUrl }}
+                  resizeMode="cover"
+                  className="mb-3 h-44 w-full rounded-md bg-app-dark-card"
+                />
+              ) : (
+                <View className="mb-3 h-44 w-full rounded-md bg-app-dark-card" />
+              )}
+
+              <View className="absolute right-2 top-2">
+                <FavoriteButton
+                  liked={likedIds.has(item.id)}
+                  disabled={favoriteBusyId === item.id}
+                  onPress={() => {
+                    toggleFavorite(item.id).catch(() => {});
+                  }}
+                />
+              </View>
+            </View>
 
             <Text className="text-lg font-bold text-app-dark-text">{item.title}</Text>
 
@@ -275,6 +361,13 @@ export default function HomePage() {
             </Text>
           </Pressable>
         )}
+        ListFooterComponent={
+          loadingMore ? (
+            <Text className="pb-3 pt-1 text-center text-xs text-app-dark-brand">
+              Weitere Aktivitäten werden geladen...
+            </Text>
+          ) : null
+        }
       />
     </SafeAreaView>
   );
