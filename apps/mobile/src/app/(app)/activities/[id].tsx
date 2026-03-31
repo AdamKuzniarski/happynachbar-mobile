@@ -247,15 +247,25 @@ export default function ActivityDetailPage() {
     <SafeAreaView className={'flex-1 bg-app-dark-bg'}>
       <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
         <View className={'gap-4'}>
-          <Pressable
-            onPress={() => router.back()}
-            className={'self-start flex-row rounded-md px-3 py-2'}
-          >
-            <View className={'flex-row items-center gap-2'}>
-              <Ionicons name="arrow-back-outline" size={16} color="#F3F6EE" />
-              <Text className={'text-sm font-semibold text-app-dark-text'}>Zurück</Text>
-            </View>
-          </Pressable>
+          <View className={'flex-row items-center justify-between'}>
+            <Pressable
+              onPress={() => router.back()}
+              className={'self-start flex-row rounded-md px-3 py-2'}
+            >
+              <View className={'flex-row items-center gap-2'}>
+                <Ionicons name="arrow-back-outline" size={16} color="#F3F6EE" />
+                <Text className={'text-sm font-semibold text-app-dark-text'}>Zurück</Text>
+              </View>
+            </Pressable>
+
+            <FavoriteButton
+              liked={liked}
+              disabled={favoriteLoading}
+              onPress={() => {
+                handleToggleFavorite().catch(() => {});
+              }}
+            />
+          </View>
 
           {error ? <Text className="text-sm text-red-300">{error}</Text> : null}
 
