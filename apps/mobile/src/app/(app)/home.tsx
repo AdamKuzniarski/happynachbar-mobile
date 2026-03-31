@@ -14,7 +14,7 @@ import {
 import { formatDate } from '@/lib/format';
 import { ActivityCategory } from '@/lib/enums';
 import { HomeListHeader } from '@/components/home/HomeListHeader';
-import { FavortieButton } from '@/components/activities/FavoriteButton';
+import { FavoriteButton } from '@/components/activities/FavoriteButton';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -31,7 +31,7 @@ export default function HomePage() {
   const [isCategoryVisible, setIsCategoryVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
-  const [favoriteBusyID, setFavoriteBusyID] = useState<string | null>(null);
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
 
   async function loadLikedIdsForItems(nextItems: Activity[]) {
     const likedResults = await Promise.all(
@@ -49,10 +49,10 @@ export default function HomePage() {
   }
 
   async function toggleFavorite(activityId: string) {
-    if (favoriteBusyID) return;
+    if (favoriteBusyId) return;
 
     const wasLiked = likedIds.has(activityId);
-    setFavoriteBusyID(activityId);
+    setFavoriteBusyId(activityId);
 
     setLikedIds((prev) => {
       const next = new Set(prev);
@@ -81,7 +81,7 @@ export default function HomePage() {
         return next;
       });
     } finally {
-      setFavoriteBusyID(null);
+      setFavoriteBusyId(null);
     }
   }
 
@@ -90,8 +90,11 @@ export default function HomePage() {
 
     try {
       const page = await listActivities({ category, q: search });
+      const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
+
       setItems(page.items ?? []);
       setNextCursor(page.nextCursor ?? null);
+      setLikedIds(nextLikedIds);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -105,8 +108,11 @@ export default function HomePage() {
 
     try {
       const page = await listActivities({ category: selectedCategory, q: searchValue });
+      const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
+
       setItems(page.items ?? []);
       setNextCursor(page.nextCursor ?? null);
+      setLikedIds(nextLikedIds);
     } catch {
       setError('Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -126,8 +132,16 @@ export default function HomePage() {
         q: searchValue,
       });
 
-      setItems((prev) => [...prev, ...(page.items ?? [])]);
+      const moreItems = page.items ?? [];
+      const moreLikedIds = await loadLikedIdsForItems(moreItems);
+
+      setItems((prev) => [...prev, ...moreItems]);
       setNextCursor(page.nextCursor ?? null);
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        moreLikedIds.forEach((id) => next.add(id));
+        return next;
+      });
     } catch {
       setError('Weitere Aktivitäten konnten nicht geladen werden.');
     } finally {
@@ -199,9 +213,11 @@ export default function HomePage() {
         category: selectedCategoryRef.current,
         q: searchValueRef.current,
       })
-        .then((page) => {
+        .then(async (page) => {
+          const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
           setItems(page.items ?? []);
           setNextCursor(page.nextCursor ?? null);
+          setLikedIds(nextLikedIds);
         })
         .catch(() => {
           setError('Aktivitäten konnten nicht geladen werden.');
@@ -215,22 +231,26 @@ export default function HomePage() {
   useEffect(() => {
     let cancelled = false;
 
-    // setLoading(true);
     setLoadingMore(false);
     setRefreshing(false);
 
     const timeout = setTimeout(async () => {
       try {
         const page = await listActivities({ category: selectedCategory, q: searchValue });
+        const nextLikedIds = await loadLikedIdsForItems(page.items ?? []);
+
         if (cancelled) return;
+
         setError(null);
         setItems(page.items ?? []);
         setNextCursor(page.nextCursor ?? null);
+        setLikedIds(nextLikedIds);
       } catch {
         if (cancelled) return;
         setError('Aktivitäten konnten nicht geladen werden.');
       } finally {
         if (cancelled) return;
+
         setLoading(false);
         setRefreshing(false);
       }
@@ -297,27 +317,32 @@ export default function HomePage() {
             </Text>
           </View>
         }
-        ListFooterComponent={
-          loadingMore ? (
-            <Text className="pb-3 pt-1 text-center text-xs text-app-dark-brand">
-              Weitere Aktivitäten werden geladen...
-            </Text>
-          ) : null
-        }
         renderItem={({ item }) => (
           <Pressable
             onPress={() => openActivityDetails(item.id)}
             className="rounded-md border border-app-dark-card bg-app-dark-bg p-4"
           >
-            {item.thumbnailUrl ? (
-              <Image
-                source={{ uri: item.thumbnailUrl }}
-                resizeMode="cover"
-                className="mb-3 h-44 w-full rounded-md bg-app-dark-card"
-              />
-            ) : (
-              <View className="mb-3 h-44 w-full rounded-md bg-app-dark-card" />
-            )}
+            <View className="relative">
+              {item.thumbnailUrl ? (
+                <Image
+                  source={{ uri: item.thumbnailUrl }}
+                  resizeMode="cover"
+                  className="mb-3 h-44 w-full rounded-md bg-app-dark-card"
+                />
+              ) : (
+                <View className="mb-3 h-44 w-full rounded-md bg-app-dark-card" />
+              )}
+
+              <View className="absolute right-2 top-2">
+                <FavoriteButton
+                  liked={likedIds.has(item.id)}
+                  disabled={favoriteBusyId === item.id}
+                  onPress={() => {
+                    toggleFavorite(item.id).catch(() => {});
+                  }}
+                />
+              </View>
+            </View>
 
             <Text className="text-lg font-bold text-app-dark-text">{item.title}</Text>
 
@@ -336,6 +361,13 @@ export default function HomePage() {
             </Text>
           </Pressable>
         )}
+        ListFooterComponent={
+          loadingMore ? (
+            <Text className="pb-3 pt-1 text-center text-xs text-app-dark-brand">
+              Weitere Aktivitäten werden geladen...
+            </Text>
+          ) : null
+        }
       />
     </SafeAreaView>
   );
