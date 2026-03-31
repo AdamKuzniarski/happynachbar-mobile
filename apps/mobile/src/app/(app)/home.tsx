@@ -48,6 +48,43 @@ export default function HomePage() {
     return new Set(likedResults.filter((value): value is string => !!value));
   }
 
+  async function toggleFavorite(activityId: string) {
+    if (favoriteBusyID) return;
+
+    const wasLiked = likedIds.has(activityId);
+    setFavoriteBusyID(activityId);
+
+    setLikedIds((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) {
+        next.delete(activityId);
+      } else {
+        next.add(activityId);
+      }
+      return next;
+    });
+
+    try {
+      if (wasLiked) {
+        await unlikeActivity(activityId);
+      } else {
+        await likeActivity(activityId);
+      }
+    } catch {
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) {
+          next.add(activityId);
+        } else {
+          next.delete(activityId);
+        }
+        return next;
+      });
+    } finally {
+      setFavoriteBusyID(null);
+    }
+  }
+
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
 
