@@ -3,7 +3,7 @@ import { Pressable, type GestureResponderEvent } from 'react-native';
 
 type FavoriteButtonProps = {
   liked: boolean;
-  disabled: boolean;
+  disabled?: boolean;
   onPress: () => void;
 };
 
@@ -24,7 +24,7 @@ export function FavoriteButton({ liked, disabled = false, onPress }: FavoriteBut
       }`}
     >
       <Ionicons
-        name={liked ? 'heart' : 'headset-outline'}
+        name={liked ? 'heart' : 'heart-outline'}
         size={18}
         color={liked ? '#FF6B6B' : '#F3F6EE'}
       />
