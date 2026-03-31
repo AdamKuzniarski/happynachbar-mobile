@@ -71,6 +71,25 @@ export function listActivities(params: ListActivitiesParams = {}) {
   }
 
   const query = searchParams.toString();
+  return apiRequest<ListActivitiesResponse>(`/activities${query ? `?${query}` : ''}`);
+}
+
+export function listFavoriteActivities(params: ListActivitiesParams = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.cursor) {
+    searchParams.set('cursor', params.cursor);
+  }
+
+  if (params.category) {
+    searchParams.set('category', params.category);
+  }
+
+  if (params.q) {
+    searchParams.set('q', params.q);
+  }
+
+  const query = searchParams.toString();
   return apiRequest<ListActivitiesResponse>(`/activities/favorites${query ? `?${query}` : ''}`);
 }
 
