@@ -4,10 +4,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { listActivities, type Activity } from '@/lib/activities';
+import {
+  listActivities,
+  getActivityLikeStatus,
+  likeActivity,
+  unlikeActivity,
+  type Activity,
+} from '@/lib/activities';
 import { formatDate } from '@/lib/format';
 import { ActivityCategory } from '@/lib/enums';
 import { HomeListHeader } from '@/components/home/HomeListHeader';
+import { FavortieButton } from '@/components/activities/FavoriteButton';
 
 export default function HomePage() {
   const [items, setItems] = useState<Activity[]>([]);
@@ -23,6 +30,8 @@ export default function HomePage() {
   const searchValueRef = useRef(searchValue);
   const [isCategoryVisible, setIsCategoryVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [favoriteBusyID, setFavoriteBusyID] = useState<string | null>(null);
 
   async function loadFirstPage(category: ActivityCategory | null, search: string) {
     setError(null);
