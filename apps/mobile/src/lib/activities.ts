@@ -126,6 +126,10 @@ export function unlikeActivity(id: string) {
   });
 }
 
+export function getActivityLikeStatus(id: string) {
+  return apiRequest<{ liked: boolean }>(`/activities/${id}/liked`);
+}
+
 export function listActivityParticipants(id: string) {
   return apiRequest<ActivityParticipant[]>(`/activities/${id}/participants`);
 }
