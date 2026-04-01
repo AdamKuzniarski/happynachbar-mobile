@@ -1,4 +1,4 @@
-import { ActivityCategory } from '@/lib/enums';
+import { ActivityCategory } from '../../lib/enums';
 import type { ActivityWritePayload } from '@/lib/activities';
 
 export const MAX_IMAGE_URLS = 5;
@@ -50,8 +50,7 @@ function getDateFromDisplay(dateInput: string) {
 export function getPickerBaseDate(dateInput: string, timeInput: string) {
   const validDate = getDateFromDisplay(dateInput);
   const now = new Date();
-  const base =
-    validDate ?? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+  const base = validDate ?? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
 
   const timeValue = timeInput.trim();
   if (timeValue) {
