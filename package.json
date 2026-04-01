@@ -9,8 +9,5 @@
     "dev:mobile": "npm -w apps/mobile run start",
     "dev:web": "npm -w apps/web run dev",
     "dev:api": "npm -w apps/api run start:dev",
-    "test": "jest --watch",
-    "test:ci": "jest --runInBand",
-    "test:coverage": "jest --coverage"
   }
 }
