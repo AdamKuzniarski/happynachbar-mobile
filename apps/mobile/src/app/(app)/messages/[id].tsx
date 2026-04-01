@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { io, type Socket } from 'socket.io-client';
 import { ChatComposer } from '@/components/chat/ChatComposer';
 import { ChatMessageBubble } from '@/components/chat/ChatMessageBubble';
@@ -36,6 +36,7 @@ export default function MessageRoomPage() {
   const params = useLocalSearchParams<{ id?: string }>();
   const conversationId = typeof params.id === 'string' ? params.id : '';
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
 
   const [conversation, setConversation] = useState<ConversationListItem | null>(null);
   const [items, setItems] = useState<RoomMessage[]>([]);
@@ -423,7 +424,8 @@ export default function MessageRoomPage() {
       <SafeAreaView className="flex-1 bg-app-dark-bg">
         <KeyboardAvoidingView
           className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
           <ChatRoomHeader
             title={getConversationTitle(conversation)}
@@ -500,6 +502,7 @@ export default function MessageRoomPage() {
             onSend={onSendMessage}
             sendError={sendError}
             actionError={actionError}
+            bottomInset={Math.max(insets.bottom, 12)}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
