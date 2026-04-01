@@ -1,0 +1,42 @@
+appId: com.happynachbar.mobile
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    when:
+      visible: "Open debugger to view warnings."
+    commands:
+      - tapOn:
+          point: "92%,89%"
+- extendedWaitUntil:
+    visible: "Herzlich Willkommen bei happynachbar"
+    timeout: 20000
+- retry:
+    maxRetries: 3
+    commands:
+      - openLink:
+          link: "mobile:///qa-chat-keyboard"
+      - extendedWaitUntil:
+          visible: "QA Chat Keyboard"
+          timeout: 8000
+      - runFlow:
+          when:
+            visible: "Open debugger to view warnings."
+          commands:
+            - tapOn:
+                point: "92%,89%"
+- extendedWaitUntil:
+    visible:
+      id: "chat-composer-input"
+    timeout: 20000
+- assertVisible:
+    id: "chat-composer-input"
+- assertVisible:
+    id: "chat-composer-send"
+- tapOn:
+    id: "chat-composer-input"
+- inputText: "Keyboard visibility regression check"
+- extendedWaitUntil:
+    visible: "Keyboard safe: yes"
+    timeout: 10000
+- assertVisible: "Keyboard safe: yes"

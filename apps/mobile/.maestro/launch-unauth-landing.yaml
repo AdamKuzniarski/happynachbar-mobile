@@ -1,0 +1,6 @@
+appId: com.happynachbar.mobile
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Herzlich Willkommen bei happynachbar"
+- assertVisible: "Entdecke deine Nachbarschaft!"
