@@ -3,7 +3,7 @@ import { router, Tabs } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getAuthToken } from '@/lib/auth-token';
+import { hasValidStoredSession } from '@/lib/auth-session';
 import { getUnreadCount } from '@/lib/chat';
 import { onChatEvent } from '@/lib/chat-events';
 
@@ -26,9 +26,8 @@ export default function AppTabsLayout() {
 
     async function checkSession() {
       try {
-        const token = await getAuthToken();
-
-        if (!token) {
+        const hasValidSession = await hasValidStoredSession();
+        if (!hasValidSession) {
           router.replace('/landing');
           return;
         }

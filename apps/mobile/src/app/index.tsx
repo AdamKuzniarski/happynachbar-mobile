@@ -1,8 +1,8 @@
 import { Redirect } from 'expo-router';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAuthToken } from '@/lib/auth-token';
 import { useEffect, useState } from 'react';
+import { hasValidStoredSession } from '@/lib/auth-session';
 
 export default function Index() {
   const [isBooting, setIsBooting] = useState(true);
@@ -11,8 +11,7 @@ export default function Index() {
   useEffect(() => {
     async function resolveSession() {
       try {
-        const token = await getAuthToken();
-        setHasToken(Boolean(token));
+        setHasToken(await hasValidStoredSession());
       } finally {
         setIsBooting(false);
       }
