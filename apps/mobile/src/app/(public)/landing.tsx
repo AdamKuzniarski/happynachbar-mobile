@@ -21,6 +21,7 @@ export default function LandingPage() {
           <View className="w-full items-center"></View>
 
           <Pressable
+            testID="landing-continue"
             onPress={handleContinue}
             className={
               'mt-5 h-12 w-full items-center justify-center rounded-md bg-app-dark-accent '

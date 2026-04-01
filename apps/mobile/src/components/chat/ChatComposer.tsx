@@ -7,6 +7,8 @@ type ChatComposerProps = {
   onSend: () => void;
   sendError?: string | null;
   actionError?: string | null;
+  bottomInset?: number;
+  keyboardOffset?: number;
 };
 
 export function ChatComposer({
@@ -15,15 +17,21 @@ export function ChatComposer({
   onSend,
   sendError,
   actionError,
+  bottomInset = 16,
+  keyboardOffset = 0,
 }: ChatComposerProps) {
   const isDisabled = !value;
   return (
-    <View className="border-t border-app-dark-card px-4 pb-4 pt-3">
+    <View
+      className="border-t border-app-dark-card px-4 pt-3"
+      style={{ paddingBottom: bottomInset, marginBottom: keyboardOffset }}
+    >
       {sendError ? <Text className="mb-2 text-sm text-red-300">{sendError}</Text> : null}
       {actionError ? <Text className="mb-2 text-sm text-red-300">{actionError}</Text> : null}
 
       <View className="flex-row items-center gap-2">
         <TextInput
+          testID="chat-composer-input"
           value={value}
           onChangeText={onChange}
           placeholder="Nachricht..."
@@ -32,6 +40,7 @@ export function ChatComposer({
         />
 
         <Pressable
+          testID="chat-composer-send"
           onPress={onSend}
           disabled={isDisabled}
           className={`h-11 w-11 items-center justify-center rounded-2xl ${
