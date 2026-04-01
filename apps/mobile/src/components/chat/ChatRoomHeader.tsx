@@ -13,7 +13,7 @@ export function ChatRoomHeader({ title, isOnline, subtitle }: ChatRoomHeaderProp
     <View className={'flex-row items-start gap-3 py-4 pb-3 pt-4'}>
       <Pressable
         onPress={() => {
-          router.back();
+          router.replace('/messages');
         }}
         className={'mt-0.5 h-10 w-10 items-center justify-center rounded-full bg-app-dark-card'}
       >
