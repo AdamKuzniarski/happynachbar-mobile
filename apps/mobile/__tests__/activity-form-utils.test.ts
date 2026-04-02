@@ -18,7 +18,13 @@ describe('activity-form-utils', () => {
   });
 
   test('toValidDate() gibt be ungültigen Wert null zurück', () => {
-    expect(toValidDate('aasad')).toBe(null);
-    expect(toValidDate()).toBe(null);
+    expect(toValidDate('aasad')).toBeNull();
+    expect(toValidDate()).toBeNull();
+  });
+
+  test('toValidDate() gibt bei gültigem Datum ein Date-Objekt zurück', () => {
+    const result = toValidDate('2026-04-01T15:45:00+02:00');
+    expect(result).toBeInstanceOf(Date);
+    expect(result?.toISOString()).toBe('2026-04-01T13:45:00.000Z');
   });
 });
