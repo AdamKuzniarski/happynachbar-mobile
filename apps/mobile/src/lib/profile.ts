@@ -1,4 +1,4 @@
-import { ApiError } from '@/lib/api';
+import { ApiError } from '../lib/api';
 
 export type ProfileFormValues = {
   displayName: string;
