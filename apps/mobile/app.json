@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "happynachbar",
+    "slug": "happynachbar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -23,7 +23,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -60,8 +63,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "73b020c1-0b19-4fb9-9a5c-aad4fc292166"
+        "projectId": "d543a58c-f4e2-4f5a-8d88-b190564dd503"
       }
-    }
+    },
+    "owner": "adamkuzniarski"
   }
 }
