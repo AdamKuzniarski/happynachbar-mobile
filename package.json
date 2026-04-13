@@ -8,6 +8,6 @@
   "scripts": {
     "dev:mobile": "npm -w apps/mobile run start",
     "dev:web": "npm -w apps/web run dev",
-    "dev:api": "npm -w apps/api run start:dev",
+    "dev:api": "npm -w apps/api run start:dev"
   }
 }
