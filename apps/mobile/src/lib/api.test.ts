@@ -81,4 +81,47 @@ describe('api.ts', () => {
       body: JSON.stringify({ title: 'Spaziergang' }),
     });
   });
+
+  test('überschreibt einen manuell gesetzten Authorization Header nicht', async () => {
+    mockGetAuthToken.mockResolvedValue('secret-token');
+    mockFetch.mockResolvedValue(
+      createMockResponse({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        body: JSON.stringify({ ok: true }),
+      }),
+    );
+
+    const { apiRequest } = loadApiModule();
+
+    await apiRequest('/activities', {
+      headers: {
+        Authorization: 'Bearer manual-token',
+      },
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith('http://localhost:4000/activities', {
+      headers: {
+        Accept: 'application/json',
+        Authorization: 'Bearer manual-token',
+      },
+      body: undefined,
+    });
+  });
+
+  test('wirft ApiError mit code und message aus dem API-Payload', async () => {
+    mockGetAuthToken.mockResolvedValue(null);
+    mockFetch.mockResolvedValue(
+      createMockResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        body: JSON.stringify({
+          code: 'VALIDATION_ERROR',
+          message: ['Title is required', 'PLZ is required'],
+        }),
+      }),
+    );
+  });
 });
