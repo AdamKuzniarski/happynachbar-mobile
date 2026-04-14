@@ -154,4 +154,25 @@ describe('api.ts', () => {
       message: 'Not Found',
     });
   });
+
+  test('wirft INVALID_JSON bie inkorrekter JSON-Antwort', async () => {
+    mockGetAuthToken.mockResolvedValue(null);
+    mockFetch.mockResolvedValue(
+      createMockResponse({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        body: '{invalid json',
+      }),
+    );
+
+    const { apiRequest } = loadApiModule();
+
+    await expect(apiRequest('/activities')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 200,
+      code: 'INVALID_JSON',
+      message: 'The API returned invalid json',
+    });
+  });
 });
