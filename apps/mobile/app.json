@@ -15,7 +15,7 @@
       }
     },
     "android": {
-      "package": "com.happynachbar.mobile",
+      "package": "com.github.adamkuzniarski.happynachbar_mobile",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -54,7 +54,8 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
