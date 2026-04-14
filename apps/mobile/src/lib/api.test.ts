@@ -175,4 +175,18 @@ describe('api.ts', () => {
       message: 'The API returned invalid json',
     });
   });
+
+  test('wandelt fetch-Fehler in NETWORK_ERROR um', async () => {
+    mockGetAuthToken.mockResolvedValue(null);
+    mockFetch.mockRejectedValue(new Error('Network failure'));
+
+    const { apiRequest } = loadApiModule();
+
+    await expect(apiRequest('/activities')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 0,
+      code: 'NETWORK_ERROR',
+      message: 'Network request failed. Please check your API URL and connection.',
+    });
+  });
 });
