@@ -189,4 +189,12 @@ describe('api.ts', () => {
       message: 'Network request failed. Please check your API URL and connection.',
     });
   });
+  test('wirft Fehler, wenn EXPO_PUBLIC_API_URL ungültig ist', () => {
+    jest.resetModules();
+    process.env.EXPO_PUBLIC_API_URL = 'not-a-url';
+
+    expect(() => require('@/lib/api')).toThrow(
+      'Invalid EXPO_PUBLIC_API_URL: "not-a-url". Use a full URL like http://localhost:4000.',
+    );
+  });
 });
