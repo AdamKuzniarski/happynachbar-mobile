@@ -197,4 +197,48 @@ describe('api.ts', () => {
       'Invalid EXPO_PUBLIC_API_URL: "not-a-url". Use a full URL like http://localhost:4000.',
     );
   });
+
+  test('nutzt einen String-Fehlerpayload direkt als Fehlermeldung', async () => {
+    mockGetAuthToken.mockResolvedValue(null);
+    mockFetch.mockResolvedValue(
+      createMockResponse({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        body: JSON.stringify('Server ist kaputt'),
+      }),
+    );
+
+    const { apiRequest } = loadApiModule();
+
+    await expect(apiRequest('/activities')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 500,
+      code: 'HTTP_500',
+      message: 'Server ist kaputt',
+    });
+  });
+
+  test('nutzt payload.message, wenn sie ein String ist', async () => {
+    mockGetAuthToken.mockResolvedValue(null);
+    mockFetch.mockResolvedValue(
+      createMockResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        body: JSON.stringify({
+          message: 'Titel fehlt',
+        }),
+      }),
+    );
+
+    const { apiRequest } = loadApiModule();
+
+    await expect(apiRequest('/activities')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 400,
+      code: 'HTTP_400',
+      message: 'Titel fehlt',
+    });
+  });
 });
