@@ -119,9 +119,39 @@ describe('api.ts', () => {
         statusText: 'Bad Request',
         body: JSON.stringify({
           code: 'VALIDATION_ERROR',
-          message: ['Title is required', 'PLZ is required'],
+          message: ['Titel fehlt', 'PLZ fehlt'],
         }),
       }),
     );
+
+    const { apiRequest } = loadApiModule();
+
+    await expect(apiRequest('/activities')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Titel fehlt, PLZ fehlt',
+    });
+  });
+
+  test('nimmt statusText und HTTP_status als Fallback bei leerem Fehler-Payload', async () => {
+    mockGetAuthToken.mockResolvedValue(null);
+    mockFetch.mockResolvedValue(
+      createMockResponse({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        body: '',
+      }),
+    );
+
+    const { apiRequest } = loadApiModule();
+
+    await expect(apiRequest('/missing')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 404,
+      code: 'HTTP_404',
+      message: 'Not Found',
+    });
   });
 });
