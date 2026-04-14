@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "happynachbar",
-    "slug": "happynachbar",
+    "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -64,9 +64,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d543a58c-f4e2-4f5a-8d88-b190564dd503"
+        "projectId": "73b020c1-0b19-4fb9-9a5c-aad4fc292166"
       }
-    },
-    "owner": "adamkuzniarski"
+    }
   }
 }
