@@ -1,0 +1,44 @@
+import {
+  applyLocalDelete,
+  applyLocalEdit,
+  getConversationSubtitle,
+  getConversationTitle,
+  getSocketErrorText,
+  mergeMessages,
+  replaceOptimisticMessage,
+  sortMessagesDesc,
+  upsertMessage,
+  type RoomMessage,
+} from '@/lib/chat-room';
+
+function makeMessage(overrides: Partial<RoomMessage> = {}): RoomMessage {
+  return {
+    id: 'm1',
+    conversationId: 'c1',
+    senderId: 'u1',
+    senderDisplayName: 'Adam',
+    body: 'Hallo',
+    createdAt: '2026-04-14T10:00:00.000Z',
+    editedAt: null,
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+describe('chat-room helper functions', () => {
+  test('sortMessagesDesc sortiert Nachrichten nach createdAt absteigend', () => {
+    const older = makeMessage({
+      id: 'm1',
+      createdAt: '2026-04-14T09:00:00.000Z',
+    });
+
+    const newer = makeMessage({
+      id: 'm2',
+      createdAt: '2026-04-14T10:00:00.000Z',
+    });
+
+    const result = sortMessagesDesc([older, newer]);
+
+    expect(result.map((item) => item.id)).toEqual(['m2', 'm1']);
+  });
+});
