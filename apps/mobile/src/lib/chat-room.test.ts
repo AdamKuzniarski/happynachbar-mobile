@@ -172,4 +172,84 @@ describe('chat-room helper functions', () => {
       }),
     ).toBe('Direktnachricht');
   });
+
+  test('applyLocalEdit aktualisiert body und setzt editedAt', () => {
+    const items = [makeMessage({ id: 'm1', body: 'Alt' })];
+
+    const result = applyLocalEdit(items, 'm1', 'Neu');
+
+    expect(result[0].body).toBe('Neu');
+    expect(result[0].editedAt).not.toBeNull();
+  });
+
+  test('applyLocalDelete leert body und setzt deletedAt', () => {
+    const items = [makeMessage({ id: 'm1', body: 'Hallo' })];
+
+    const result = applyLocalDelete(items, 'm1');
+
+    expect(result[0].body).toBeNull();
+    expect(result[0].deletedAt).not.toBeNull();
+  });
+  test('applyLocalDelete leert body und setzt deletedAt', () => {
+    const items = [makeMessage({ id: 'm1', body: 'Hallo' })];
+
+    const result = applyLocalDelete(items, 'm1');
+
+    expect(result[0].body).toBeNull();
+    expect(result[0].deletedAt).not.toBeNull();
+  });
+
+  test('replaceOptimisticMessage ersetzt passende optimistic message', () => {
+    const optimistic = makeMessage({
+      id: 'local:1',
+      localId: 'local:1',
+      optimistic: true,
+      senderId: 'u1',
+      body: 'Hallo zusammen',
+    });
+
+    const serverMessage = makeMessage({
+      id: 'm-real',
+      senderId: 'u1',
+      body: 'Hallo zusammen',
+      createdAt: '2026-04-14T11:00:00.000Z',
+    });
+
+    const result = replaceOptimisticMessage({
+      items: [optimistic],
+      nextMessage: serverMessage,
+      currentUserId: 'u1',
+    });
+
+    expect(result.replaced).toBe(true);
+    expect(result.localId).toBe('local:1');
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe('m-real');
+  });
+
+  test('replaceOptimisticMessage ersetzt nichts bei anderer senderId', () => {
+    const optimistic = makeMessage({
+      id: 'local:1',
+      localId: 'local:1',
+      optimistic: true,
+      senderId: 'u1',
+      body: 'Hallo zusammen',
+    });
+
+    const serverMessage = makeMessage({
+      id: 'm-real',
+      senderId: 'u2',
+      body: 'Hallo zusammen',
+    });
+
+    const result = replaceOptimisticMessage({
+      items: [optimistic],
+      nextMessage: serverMessage,
+      currentUserId: 'u1',
+    });
+
+    expect(result.replaced).toBe(false);
+    expect(result.localId).toBeNull();
+    expect(result.items).toEqual([optimistic]);
+  });
 });
