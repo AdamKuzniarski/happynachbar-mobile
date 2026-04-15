@@ -104,4 +104,72 @@ describe('chat-room helper functions', () => {
       'Socket-Verbindung fehlgeschlagen. Bitte API/Token prüfen.',
     );
   });
+
+  test('getConversationTitle liefert sinnvolle Fallbacks', () => {
+    expect(getConversationTitle()).toBe('Chat');
+
+    expect(
+      getConversationTitle({
+        id: 'c1',
+        participantId: null,
+        participantDisplayName: null,
+        participantAvatarUrl: null,
+        activityId: 'a1',
+        activityTitle: 'Nachbarschaftsgrillen',
+        type: 'GROUP',
+        hasUnread: false,
+        lastMessageBody: null,
+        lastMessageAt: null,
+      }),
+    ).toBe('Nachbarschaftsgrillen');
+
+    expect(
+      getConversationTitle({
+        id: 'c2',
+        participantId: 'u2',
+        participantDisplayName: '  Julia  ',
+        participantAvatarUrl: null,
+        activityId: null,
+        activityTitle: null,
+        type: 'DIRECT',
+        hasUnread: false,
+        lastMessageBody: null,
+        lastMessageAt: null,
+      }),
+    ).toBe('Julia');
+  });
+
+  test('getConversationSublitle liefert sinnvolle Fallbacks', () => {
+    expect(getConversationSubtitle()).toBeNull();
+
+    expect(
+      getConversationSubtitle({
+        id: 'c1',
+        participantId: null,
+        participantDisplayName: null,
+        participantAvatarUrl: null,
+        activityId: 'a1',
+        activityTitle: 'Nachbarschaftsgrillen',
+        type: 'GROUP',
+        hasUnread: false,
+        lastMessageBody: null,
+        lastMessageAt: null,
+      }),
+    ).toBe('Gruppenchat');
+
+    expect(
+      getConversationSubtitle({
+        id: 'c2',
+        participantId: 'u2',
+        participantDisplayName: 'Julia',
+        participantAvatarUrl: null,
+        activityId: null,
+        activityTitle: null,
+        type: 'DIRECT',
+        hasUnread: false,
+        lastMessageBody: null,
+        lastMessageAt: null,
+      }),
+    ).toBe('Direktnachricht');
+  });
 });
