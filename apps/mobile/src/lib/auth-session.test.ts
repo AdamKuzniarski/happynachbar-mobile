@@ -46,3 +46,31 @@ describe('hasValidStoredSession', () => {
     expect(clearAuthToken).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('hasValidStoredSession with default dependencies', () => {
+  test('nutzt default deps und gibt true bie gültiger Session zurück', async () => {
+    jest.resetModules();
+
+    const mockGetAuthToken = jest.fn().mockResolvedValue('token');
+    const mockGetAuthMe = jest.fn().mockResolvedValue({ id: '1' });
+    const mockClearAuthToken = jest.fn().mockResolvedValue(undefined);
+
+    jest.doMock('@/lib/auth-token', () => ({
+      getAuthToken: mockGetAuthToken,
+      clearAuthToken: mockClearAuthToken,
+    }));
+
+    jest.doMock('@/lib/auth', () => ({
+      getAuthMe: mockGetAuthMe,
+    }));
+
+    const { hasValidStoredSession } =
+      require('@/lib/auth-session') as typeof import('@/lib/auth-session');
+
+    await expect(hasValidStoredSession()).resolves.toBe(true);
+
+    expect(mockGetAuthToken).toHaveBeenCalled();
+    expect(mockGetAuthMe).toHaveBeenCalled();
+    expect(mockClearAuthToken).not.toHaveBeenCalled();
+  });
+});

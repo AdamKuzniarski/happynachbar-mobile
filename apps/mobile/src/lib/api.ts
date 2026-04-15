@@ -91,7 +91,7 @@ async function parseJsonSafe(response: Response) {
     throw new ApiError({
       status: response.status,
       code: 'INVALID_JSON',
-      message: 'The API returned invalid JSON.',
+      message: 'The API returned invalid json',
     });
   }
 }
@@ -117,29 +117,21 @@ export async function apiRequest<TResponse>(
   }
 
   const hasBody = body !== undefined && body !== null;
+  let response: Response;
+  let payload: unknown;
 
   if (hasBody && !requestHeaders['Content-Type']) {
     requestHeaders['Content-Type'] = 'application/json';
   }
 
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       ...requestInit,
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
     });
 
-    const payload = await parseJsonSafe(response);
-
-    if (!response.ok) {
-      throw new ApiError({
-        status: response.status,
-        code: getErrorCode(payload, response.status),
-        message: getErrorMessage(payload, response.statusText || 'Request failed'),
-      });
-    }
-
-    return payload as TResponse;
+    payload = await parseJsonSafe(response);
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
@@ -151,4 +143,14 @@ export async function apiRequest<TResponse>(
       message: 'Network request failed. Please check your API URL and connection.',
     });
   }
+
+  if (response.ok) {
+    return payload as TResponse;
+  }
+
+  throw new ApiError({
+    status: response.status,
+    code: getErrorCode(payload, response.status),
+    message: getErrorMessage(payload, response.statusText || 'Request failed'),
+  });
 }
