@@ -74,4 +74,34 @@ describe('chat-room helper functions', () => {
     expect(result).toHaveLength(1);
     expect(result[0].body).toBe('Neu');
   });
+
+  test('upsertMessage fügt neue Nachricht hinzu, und sortriert korrekt', () => {
+    const existing = makeMessage({
+      id: 'm1',
+      createdAt: '2026-04-14T10:00:00.000Z',
+    });
+
+    const incoming = makeMessage({
+      id: 'm2',
+      createdAt: '2026-04-14T11:00:00.000Z',
+      body: 'Neu',
+    });
+
+    const result = upsertMessage([existing], incoming);
+
+    expect(result.map((item) => item.id)).toEqual(['m2', 'm1']);
+  });
+
+  test('getSocketErrorText nimmt error.message wenn vorhanden', () => {
+    expect(getSocketErrorText({ message: 'Socket broken' })).toBe('Socket broken');
+  });
+
+  test('getSocketErrorTest nutzt Fallback wenn keine brauchbare Message vorhanden', () => {
+    expect(getSocketErrorText(null)).toBe(
+      'Socket-Verbindung fehlgeschlagen. Bitte API/Token prüfen.',
+    );
+    expect(getSocketErrorText({ message: '    ' })).toBe(
+      'Socket-Verbindung fehlgeschlagen. Bitte API/Token prüfen.',
+    );
+  });
 });
