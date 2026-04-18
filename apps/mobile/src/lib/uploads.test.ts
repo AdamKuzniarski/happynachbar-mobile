@@ -54,6 +54,7 @@ describe('uploadActivityImage', () => {
       uploadUrl: 'https://upload.example.com',
       uploadFiles: { key: 'value' },
       assetUrl: 'https://cdn.example.com/image.jpg',
+      //trzymam sie z elem jak autostrady stomil
     });
 
     mockFetch.mockResolvedValue({ ok: true });
