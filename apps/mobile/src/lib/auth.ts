@@ -53,3 +53,17 @@ export function signup(payload: SignupPayload) {
     body: payload,
   });
 }
+
+export function resendVerification(payload: EmailPayload) {
+  return apiRequest<OkResponse>('/auth/resend-verification', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function requestPasswordReset(payload: EmailPayload) {
+  return apiRequest<OkResponse>('/auth/forgot-password', {
+    method: 'POST',
+    body: payload,
+  });
+}
