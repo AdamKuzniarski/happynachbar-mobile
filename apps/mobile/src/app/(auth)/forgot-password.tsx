@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
   const showEmailError = submitted && !isEmailValid;
 
   async function handleSubmit() {
-    setIsSubmitting(true);
+    setSubmitted(true);
     setSubmitError(null);
 
     if (!isEmailValid || isSubmitting) return;
@@ -38,40 +38,43 @@ export default function ForgotPasswordPage() {
       return;
     } finally {
       setIsSubmitting(false);
-      setEmail('');
-      alert('Wenn ein Konto existiert, wurde eine E-Mail gesendet.');
     }
 
-    return (
-      <>
-        <AuthScreen
-          title="Passwort vergessen"
-          subtitle={
-            'Gib deine E-Mail ein. Wenn ein Konto existiert, senden wir dir eine Reset-Link.'
-          }
-          footer={
-            <Text className={'text-center text-sm leading-6 text-app-dark-brand'}>
-              Zurück zum Login?
-              <Text onPress={() => router.push('//login')} className={'font-semibold underline'}>
-                Anmelden
-              </Text>
-            </Text>
-          }
-        />
-        <AuthField
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          error={showEmailError ? 'Bitte gib eine gültige E-Mail-Adresse ein.' : null}
-        />
-
-        {submitError ? <Text className={'text-center text-sm text-red-400'}>{submitError}</Text> : null}
-
-        <AuthButton
-      </>
-    );
+    setSubmitted(false);
+    setEmail('');
+    alert('Wenn ein Konto existiert, wurde eine E-Mail gesendet.');
   }
+
+  return (
+    <AuthScreen
+      title="Passwort vergessen"
+      subtitle="Gib deine E-Mail ein. Wenn ein Konto existiert, senden wir dir einen Reset-Link."
+      footer={
+        <Text className="text-center text-sm leading-6 text-app-dark-brand">
+          Zurück zum Login?{' '}
+          <Text onPress={() => router.push('/login')} className="font-semibold underline">
+            Anmelden
+          </Text>
+        </Text>
+      }
+    >
+      <AuthField
+        value={email}
+        onChangeText={setEmail}
+        placeholder="E-Mail"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        error={showEmailError ? 'Bitte gib eine gültige E-Mail-Adresse ein.' : null}
+      />
+
+      {submitError ? <Text className="text-sm text-red-400">{submitError}</Text> : null}
+
+      <AuthButton
+        label={isSubmitting ? 'Senden...' : 'Reset-Link senden'}
+        onPress={handleSubmit}
+        disabled={isSubmitting}
+      />
+    </AuthScreen>
+  );
 }
