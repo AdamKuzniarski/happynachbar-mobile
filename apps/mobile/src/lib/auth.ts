@@ -28,6 +28,14 @@ export type SignupResponse = {
   updatedAt: string;
 };
 
+export type EmailPayload = {
+  email: string;
+};
+
+export type OkResponse = {
+  ok: true;
+};
+
 export function login(payload: LoginPayload) {
   return apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
