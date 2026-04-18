@@ -37,16 +37,16 @@ export default function VarifyEmailPendingPage() {
 
     setIsSubmitting(true);
 
-    try{
+    try {
       await resendVerification({ email: normalizedEmail });
-      setSuccessMessage('Bestätigungs-Mail wurde erneut gesendet.')
-    }catch (error) {
-      if(error instanceof ApiError){
+      setSuccessMessage('Bestätigungs-Mail wurde erneut gesendet.');
+    } catch (error) {
+      if (error instanceof ApiError) {
         setSubmitError(error.message);
-      }else{
-        setSubmitError('Konnte E-Mail nicht senden. Bitte erneut versuchen.')
+      } else {
+        setSubmitError('Konnte E-Mail nicht senden. Bitte erneut versuchen.');
       }
-    }finally {
+    } finally {
       setIsSubmitting(false);
     }
   }
@@ -75,7 +75,9 @@ export default function VarifyEmailPendingPage() {
       />
 
       {submitError ? <Text className="text-sm text-red-400">{submitError}</Text> : null}
-      {successMessage ? <Text className="text-sm text-app-dark-brand">{successMessage}</Text> : null}
+      {successMessage ? (
+        <Text className="text-sm text-app-dark-brand">{successMessage}</Text>
+      ) : null}
 
       <AuthButton
         label={isSubmitting ? 'Wird gesendet...' : 'Bestätigungs-Mail erneut senden'}
@@ -84,5 +86,4 @@ export default function VarifyEmailPendingPage() {
       />
     </AuthScreen>
   );
-}
 }
