@@ -28,6 +28,14 @@ export type SignupResponse = {
   updatedAt: string;
 };
 
+export type EmailPayload = {
+  email: string;
+};
+
+export type OkResponse = {
+  ok: true;
+};
+
 export function login(payload: LoginPayload) {
   return apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -41,6 +49,20 @@ export function getAuthMe() {
 
 export function signup(payload: SignupPayload) {
   return apiRequest<SignupResponse>('/auth/signup', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function resendVerification(payload: EmailPayload) {
+  return apiRequest<OkResponse>('/auth/resend-verification', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function requestPasswordReset(payload: EmailPayload) {
+  return apiRequest<OkResponse>('/auth/forgot-password', {
     method: 'POST',
     body: payload,
   });

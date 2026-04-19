@@ -10,3 +10,5 @@ export function formatDate(iso?: string) {
     timeZone: 'Europe/Berlin',
   }).format(date);
 }
+
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
