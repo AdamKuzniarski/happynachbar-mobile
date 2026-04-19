@@ -1,99 +1,122 @@
 import { router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, Text, View } from 'react-native';
+import { AuthButton } from '@/components/auth/AuthButton';
+import { AuthField } from '@/components/auth/AuthField';
+import { AuthScreen } from '@/components/auth/AuthScreen';
+import { ApiError } from '@/lib/api';
 import { login } from '@/lib/auth';
 import { setAuthToken } from '@/lib/auth-token';
-import { colors } from '@/theme/colors';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
-  const isValid = email.length > 0 && password.length > 0;
+  const normalizedEmail = email.trim().toLowerCase();
+  const isValid = normalizedEmail.length > 0 && password.length > 0;
 
   async function handleLogin() {
     if (!isValid || isSubmitting) return;
+
+    setSubmitError(null);
+    setUnverifiedEmail(null);
     setIsSubmitting(true);
 
     try {
       const response = await login({
-        email: email.trim(),
+        email: normalizedEmail,
         password,
       });
 
       await setAuthToken(response.access_token);
       router.replace('/home');
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed. Please check your credentials and try again.');
+      if (error instanceof ApiError) {
+        if (error.status === 403 && error.message === 'Email not verified') {
+          setSubmitError('Bitte bestätige zuerst deine E-Mail-Adresse.');
+          setUnverifiedEmail(normalizedEmail);
+          return;
+        }
+
+        setSubmitError(error.message);
+      } else {
+        setSubmitError('Login fehlgeschlagen. Bitte erneut versuchen.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  function goToVerifyPending() {
+    if (!unverifiedEmail) return;
+    router.push({
+      pathname: '/verify-email-pending',
+      params: { email: unverifiedEmail },
+    } as unknown as Href);
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-app-dark-bg">
-      <View className="flex-1 items-center px-6 pt-20">
-        <View className="w-full max-w-[420px] items-center">
-          <Text className="mb-6 text-center text-[32px] font-extrabold leading-[40px] text-app-dark-text">
-            Log in
-          </Text>
-          <Text className="mb-10  text-center text-base leading-7 text-app-dark-brand">
-            Melde dich an, um deine Nachbarschaft zu entdecken.
-          </Text>
-
-          <View className={'w-full gap-4'}>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="E-Mail"
-              placeholderTextColor={colors.dark.placeholder}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              className={
-                'h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text'
-              }
-            />
-
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor={colors.dark.placeholder}
-              secureTextEntry
-              className={
-                'h-12 rounded-md border border-app-dark-card bg-app-dark-bg px-4 text-base text-app-dark-text'
-              }
-            />
-            <Pressable
-              onPress={handleLogin}
-              disabled={!isValid || isSubmitting}
-              className={`h-12 items-center justify-center rounded-md ${
-                isValid && !isSubmitting ? 'bg-app-dark-accent' : 'bg-app-dark-card opacity-70'
-              }`}
-            >
-              <Text className={'text-base font-semibold text-app-dark-text'}>
-                {isSubmitting ? 'Anmeldung läuft...' : 'Anmelden'}
-              </Text>
-            </Pressable>
-          </View>
-          <Pressable className={'mt-5'}>
-            <Text className={'text-sm font-semibold text-app-dark-brand underline'}>
-              Password vergessen?
+    <AuthScreen
+      title="Log in"
+      subtitle="Melde dich an, um deine Nachbarschaft zu entdecken."
+      footer={
+        <>
+          <Pressable onPress={() => router.push('/forgot-password' as Href)}>
+            <Text className="text-center text-sm font-semibold text-app-dark-brand underline">
+              Passwort vergessen?
             </Text>
           </Pressable>
 
-          <Text className={'mt-5 text-center text-sm leading-6 text-app-dark-brand'}>
+          <Text className="mt-5 text-center text-sm leading-6 text-app-dark-brand">
             Du hast noch keinen Account?{' '}
-            <Text onPress={() => router.push('/register')} className={'font-semibold underline'}>
-              Zum Registrieren.
+            <Text onPress={() => router.push('/register')} className="font-semibold underline">
+              Zum Registrieren
             </Text>
           </Text>
+        </>
+      }
+    >
+      <AuthField
+        value={email}
+        onChangeText={setEmail}
+        placeholder="E-Mail"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+
+      <AuthField
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Passwort"
+        secureTextEntry
+      />
+
+      {submitError ? <Text className="text-sm text-red-400">{submitError}</Text> : null}
+
+      {unverifiedEmail ? (
+        <View className="rounded-md border border-app-dark-card p-4">
+          <Text className="text-sm leading-6 text-app-dark-brand">
+            Dein Konto existiert schon, aber die E-Mail ist noch nicht bestätigt.
+          </Text>
+
+          <Pressable onPress={goToVerifyPending} className="mt-3">
+            <Text className="text-sm font-semibold text-app-dark-text underline">
+              Bestätigungs-Mail erneut senden
+            </Text>
+          </Pressable>
         </View>
-      </View>
-    </SafeAreaView>
+      ) : null}
+
+      <AuthButton
+        label={isSubmitting ? 'Anmeldung läuft...' : 'Anmelden'}
+        onPress={handleLogin}
+        disabled={!isValid || isSubmitting}
+      />
+    </AuthScreen>
   );
 }
