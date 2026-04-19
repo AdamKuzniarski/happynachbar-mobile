@@ -8,13 +8,13 @@ type Props = TextInputProps & {
 };
 
 export function AuthField({ error, className = '', ...props }: Props) {
+  const borderClass = error ? 'border-red-500' : 'border-app-dark-card';
+
   return (
     <View className={'w-full'}>
       <TextInput
         placeholderTextColor={colors.dark.placeholder}
-        className={`h-12 rounded-md border bg-app-dark-bg px-4 text-base text-app-dark-text${
-          error ? 'border-red-500' : 'border-app-dark-card'
-        }${className}`.trim()}
+        className={`h-12 rounded-md border bg-app-dark-bg px-4 text-base text-app-dark-text ${borderClass} ${className}`.trim()}
         {...props}
       />
       {error ? <Text className={'mt-2 text-sm text-red-400'}>{error}</Text> : null}
