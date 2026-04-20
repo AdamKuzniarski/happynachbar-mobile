@@ -1,10 +1,10 @@
 import Svg, { G, Path, Rect } from 'react-native-svg';
 
-type HappynachbarLogoIconProps = {
+type Props = {
   size?: number;
 };
 
-export function HappynachbarLogoIcon({ size = 40 }: HappynachbarLogoIconProps) {
+export function HappynachbarLogoIcon({ size = 40 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36" fill="none">
       <Rect
@@ -17,6 +17,7 @@ export function HappynachbarLogoIcon({ size = 40 }: HappynachbarLogoIconProps) {
         stroke="#50762f"
         strokeWidth={2}
       />
+
       <G
         transform="translate(8 6) scale(0.0434782609 0.0428571429) translate(-106.5 -124.5)"
         fill="#000"
