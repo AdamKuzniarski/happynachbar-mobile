@@ -24,7 +24,9 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -60,8 +62,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "73b020c1-0b19-4fb9-9a5c-aad4fc292166"
+        "projectId": "7363f80b-9f32-4338-bf20-6ba25f5d8f85"
       }
-    }
+    },
+    "owner": "adamkuzniarski"
   }
 }
